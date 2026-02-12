@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Chess.steelseas</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preload" href="assets/ChocolateClassicalSans-Regular.ttf" as="font" type="font/ttf" crossorigin>
+</head>
+<body>
+    <div id="app">
+        <div id="sidebar">
+            <h1 id="app-title">Chess.steelseas</h1>
+            <button data-page="play" class="sidebar-btn">Play</button>
+            <button data-page="settings"class="sidebar-btn">Settings</button>
+            <button data-page="account" class="sidebar-btn">Account</button>
+        </div>
+        <div id="page-content-container">
+            <div id="play" class="page active">
+                <div id="play-container">
+                    <div id="game">
+                        <canvas id="board">Canvas is not supported!</canvas>
+                    </div>
+                    <div id="game-card">
+                        <div id="not-in-game" class="card-page active">
+                            <h1>Play Chess</h1>
+                            <div id="gamemode-select">
+
+                            </div>
+                            <button id="find-game">Find Game</button>
+                        </div>
+                        <div id="in-game" class="card-page"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="settings" class="page">
+                <div class="scroll">
+                    <div class="setting">
+                        <div class="setting-text">
+                            <h1>Color</h1>
+                            <p>The colors of the board</p>
+                        </div>
+                        <div class="setting-controls">
+                            <div id="theme-select" class="colorpair">
+                                <div class="color"></div>
+                                <div class="color"></div>
+                            </div>
+                            <div id="theme-dropdown" class="hidden"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="account" class="page">
+                <div class="scroll">
+                    <div class="setting">
+                        <div class="setting-text">
+                            <h1>Account Info</h1>
+                            <p id="loginStatus">You are not logged in.</p>
+                        </div>
+                        <div class="setting-controls">
+                            
+                        </div>
+                    </div>
+                    <div class="setting" id="login-setting">
+                        <div class="setting-text">
+                            <h1>Log in</h1>
+                            <p>Log in, or sign up</p>
+                        </div>
+                        <div class="setting-controls">
+                            <button class="setting-btn" id="login">Log in</button>
+                            <button class="setting-btn signup" id="signup">Sign up</button>
+                            <input type="password" class="setting-input-text" id="passwordInputConfirm" placeholder="Confirm Password">
+                            <input type="password" class="setting-input-text" id="passwordInput" placeholder="Password">
+                            <input type="text" class="setting-input-text" id="usernameInput" placeholder="Username">
+                        </div>
+                        <div class="setting-feedback hidden" id="login-feedback">
+                            Passwords do not match
+                        </div>
+                    </div>
+                    <div class="setting" id="logout-setting">
+                        <div class="setting-text">
+                            <h1>Log out</h1>
+                            <p>Log out of your account</p>
+                        </div>
+                        <div class="setting-controls">
+                            <button class="setting-btn" id="logout">Log out</button>
+                        </div>
+                        <div class="setting-feedback hidden" id="logout-feedback">
+                            Passwords do not match
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="network.js"></script>
+    <script src="ui.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>

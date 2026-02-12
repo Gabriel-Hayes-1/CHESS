@@ -1,0 +1,242 @@
+body {
+    background-color: #222;
+    color:white;
+    margin: 0;
+    padding: 0;
+}
+@font-face {
+    font-family: "ChocolateSans";
+    src: url(./assets/ChocolateClassicalSans-Regular.ttf);
+}
+#app {
+    font-family:ChocolateSans, Arial, Helvetica;
+    display: grid;
+    position: fixed;
+    height: 100vh;
+    width: 100vw;
+    grid-template-columns: repeat(6, 1fr);
+    grid-template-rows: repeat(8, 1fr);
+}
+#sidebar {
+    grid-column: 1 / 2;
+    grid-row: 1 / -1;
+    background-color: #333;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.3);
+    padding:0 20px;
+    display: flex;
+    flex-direction: column;
+}
+#app-title {
+    margin:15px 0;
+    text-align: center;
+    font-family: Tahoma, sans-serif;
+}
+.sidebar-btn {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    color:white;
+    background-color:#333;
+    border: none;
+    border-bottom: 2px solid #999;
+    cursor: pointer;
+    font-size: 16px;
+    transition:inherit;
+    transition: background-color 0.3s;
+    font-family: ChocolateSans;
+}
+.sidebar-btn:hover {
+    background-color: #777;
+}
+
+
+
+#page-content-container {
+    grid-column: 2/-1;
+    grid-row: 1/-1;
+}
+/* Each page lives in the DOM; only the active page is visible */
+.page {
+    display: none;
+    width: 100%;
+    height: 100%;
+}
+.page.active {
+    display: block;
+}
+#play-container {
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+#game {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex: 0 0 auto;
+}
+
+#board {
+    width: min(70vh, 70vw);
+    max-width: 700px;
+    aspect-ratio: 1 / 1;
+    background-color: #222;
+}
+
+#game-card {
+    width: clamp(260px, 25vw, 360px);
+    height: clamp(300px, 60vh, 600px);
+    background-color: #333;
+    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+}
+
+.scroll {
+    overflow-y: auto;
+    align-content: start;
+    width: 100%;
+    height:100%;
+}
+
+.setting {
+    width: 100%;
+    border-bottom: 2px solid #555;
+
+    display: grid;
+    grid-template-columns: 1fr 3fr; /* left text | right settings */
+    align-items: center;
+    align-self: start;
+
+    padding:28px 0;
+}
+
+.setting-text {
+    margin-left: 1em;
+}
+
+h1 {
+    margin: 0;
+}
+
+p {
+    color: #ccc;
+    margin: 0.25em 0 0 0;
+}
+.setting-controls {
+    margin-right: 5em;
+    display:flex;
+    flex-direction: row-reverse;
+    gap:16px;
+}
+#theme-select {
+    height:100%;
+    border: 2px solid #555;
+    transition: background-color 0.3s;
+}
+#theme-select:hover {
+    background-color: #333;
+}
+#theme-dropdown {
+    position: absolute;
+    background-color: #333;
+    border: 2px solid #555;
+    display: grid;
+    grid-template-columns: repeat(3,1fr);
+    grid-auto-rows: max-content; /* or a fixed height */
+}
+.hidden {
+    display:none !important;
+}
+.colorpair {
+    display:flex;
+    flex-direction: row-reverse;
+    height:max-content;   
+    border: 1px solid #00000000;
+    cursor:pointer; 
+}
+.color {
+    aspect-ratio:1/1;
+    height:50px;
+}
+
+.setting-btn {
+    padding: 10px 22px;
+    font-size: 15px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    letter-spacing: 0.5px;
+}
+#signup {
+    background-color:#23a258;
+    color: white;
+}
+#signup:hover {
+    transform: translateY(-2px);
+    background-color: #2fce72;
+}
+#signup:active {
+    transform: translateY(0);
+}
+#login {
+    background: #2c2f36;
+    color: #e4e6eb;
+    border: 1px solid #3a3f47;
+}
+#login:hover {
+    background: #3a3f47;
+    transform: translateY(-2px);
+}
+#login:active {
+    transform: translateY(0);
+}
+#logout {
+    background: #c0392b;
+    color: white;
+}
+#logout:hover {
+    background: #e74c3c;
+    transform: translateY(-2px);
+}
+#logout:active {
+    transform: translateY(0);
+    
+}
+.setting-input-text {
+    padding: 8px 12px;
+    border: 1px solid #555;
+    background-color: #222;
+    color: #fff;
+    transition: border-color 0.3s;
+    width:110px;
+}
+.setting-feedback {
+    text-align: center;
+    grid-column: 1/-1;
+}
+.error {
+    color: #e74c3c;
+}
+.success { 
+    color: #2ecc71;
+}
+
+
+#not-in-game {
+    display: flex;
+    flex-direction: column;
+    gap:15px;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+}
+#find-game {
+    padding:10px 20px;
+    font-size:16px;
+    cursor:pointer;
+}
