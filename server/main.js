@@ -8,20 +8,36 @@ const crypto = require('crypto');
 const cookieParser = require('cookie-parser');
 const cookie = require('cookie');
 const game = require('./game');
+const { match } = require('assert');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
-const connectedPlayers = new Map();
 
 const JWT_SECRET = '444796dbd8f84d921dbd9e55dbfff3f14086f7e6249287ffb12e1e2b2443eaeb' //maybe define in .env later
 
 const database = {}; //EXTREMELY TEMPORARY. REPLACE WITH REAL DATABASE LATER
+const connectedPlayers = new Map();
+const matchmakingQueue = new Set();
+const gameManager = new game.GameManager(io);
 
 const PORT = process.argv[2] || 3000; // Use command-line argument or default to 3000
 
 app.use(cookieParser());
 app.use(express.json());
+
+app.use(express.static("client", {
+  setHeaders: (res, path) => {
+    if (/\.(html|css|js)$/.test(path)) {
+      res.setHeader("Cache-Control", "no-store");
+    }
+  }
+}));
+
+app.use("/assets", express.static("client/assets", {
+  maxAge: "1",
+  immutable: true
+}));
 
 // Serve everything in the client directory
 const clientDir = path.join(__dirname, '../client');
@@ -57,11 +73,6 @@ function authenticate(req,res,next) {
         next();
     });
 }
-
-// client requests a game.
-app.post('/api/findgame', authenticate, (req, res) => {
-    console.log(`Player ${req.user.username} is looking for a game`);
-});
 
 
 app.post('/api/signup', async (req, res)=>{
@@ -110,7 +121,6 @@ app.post('/api/login', async (req, res)=>{
         if (!req.body) {
             return res.status(400).json({message: 'Invalid request body' });
         }
-        console.log(req.body)
         const {username, password} = req.body;
 
 
@@ -156,8 +166,6 @@ app.get("/api/me",authenticate, (req,res)=>{
     res.status(200).json({user: { id: req.user.id, username: req.user.username } });
 })
 
-
-
 io.use((socket,next)=>{
     let token = null;
     if (socket.handshake.headers.cookie){
@@ -194,13 +202,54 @@ io.on('connection', (socket) => {
         game:null,
         accountId
     });
+
+    socket.on('joinQueue', (callback)=>{
+        const player = connectedPlayers.get(socketId);
+        if (!player) {
+            callback(false, "Player not found");
+            return;
+        };
+        if (matchmakingQueue.has(socketId)) {
+            callback(false, "Already in queue");
+            return;
+        }
+        
+        matchmakingQueue.add(socketId);
+        checkQueue();
+        callback(true);
+    });
+
+    socket.on("cancelQueue", (callback)=>{
+        console.log("receved message")
+        const player = connectedPlayers.get(socketId);
+        if (!player) {
+            callback(false, "Player not found");
+            return;
+        }
+        if (matchmakingQueue.has(socketId)) {
+            matchmakingQueue.delete(socketId);
+            callback(true);
+            return;
+        } else {
+            callback(false, "Not in queue");
+
+        }
+    })
+
+    socket.on('disconnect',(reason)=>{
+        connectedPlayers.delete(socketId);
+        matchmakingQueue.delete(socketId);
+    });
 })
 
-
-
-
-
-
+function checkQueue() {
+    if (matchmakingQueue.size >= 2) {
+        const [player1Id, player2Id] = Array.from(matchmakingQueue).slice(0, 2);
+        matchmakingQueue.delete(player1Id);
+        matchmakingQueue.delete(player2Id);
+        gameManager.addGame(connectedPlayers.get(player1Id), connectedPlayers.get(player2Id));
+    }
+}
 
 
 

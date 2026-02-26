@@ -4,7 +4,10 @@
     <meta charset="UTF-8">
     <title>Chess.steelseas</title>
     <link rel="stylesheet" href="styles.css">
-    <link rel="preload" href="assets/ChocolateClassicalSans-Regular.ttf" as="font" type="font/ttf" crossorigin>
+    <!--<link rel="preload" href="assets/ChocolateClassicalSans-Regular.ttf" as="font" type="font/ttf" crossorigin> !-->
+    <link rel="icon" href="assets/pieces/wp.svg" media="(prefers-color-scheme: dark)">
+    <link rel="icon" href="assets/pieces/bp.svg" media="(prefers-color-scheme: light)">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
     <div id="app">
@@ -14,19 +17,21 @@
             <button data-page="settings"class="sidebar-btn">Settings</button>
             <button data-page="account" class="sidebar-btn">Account</button>
         </div>
+        <button id="sidebar-toggle"></button>
         <div id="page-content-container">
             <div id="play" class="page active">
                 <div id="play-container">
-                    <div id="game">
-                        <canvas id="board">Canvas is not supported!</canvas>
-                    </div>
+                    
+                    <canvas id="board">Canvas is not supported!</canvas>
                     <div id="game-card">
                         <div id="not-in-game" class="card-page active">
                             <h1>Play Chess</h1>
                             <div id="gamemode-select">
 
                             </div>
-                            <button id="find-game">Find Game</button>
+                            <button id="find-game" class="page-btn">Find Game</button>
+                            <button id="cancel-find-game" class="page-btn hidden">Cancel</button>
+                            <div id="matchmaking-feedback"></div>
                         </div>
                         <div id="in-game" class="card-page"></div>
                     </div>
@@ -68,8 +73,8 @@
                             <p>Log in, or sign up</p>
                         </div>
                         <div class="setting-controls">
-                            <button class="setting-btn" id="login">Log in</button>
-                            <button class="setting-btn signup" id="signup">Sign up</button>
+                            <button class="page-btn" id="login">Log in</button>
+                            <button class="page-btn signup" id="signup">Sign up</button>
                             <input type="password" class="setting-input-text" id="passwordInputConfirm" placeholder="Confirm Password">
                             <input type="password" class="setting-input-text" id="passwordInput" placeholder="Password">
                             <input type="text" class="setting-input-text" id="usernameInput" placeholder="Username">
@@ -84,7 +89,7 @@
                             <p>Log out of your account</p>
                         </div>
                         <div class="setting-controls">
-                            <button class="setting-btn" id="logout">Log out</button>
+                            <button class="page-btn" id="logout">Log out</button>
                         </div>
                         <div class="setting-feedback hidden" id="logout-feedback">
                             Passwords do not match

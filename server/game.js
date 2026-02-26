@@ -1,12 +1,17 @@
 
 class GameManager {
-    constructor() {
+    constructor(io) {
         this.games = {};
+        this.io = io;
     }
-    addGame(pid1, pid2) {
-        let game = new Game()
+    addGame(p1, p2) {
         const id = crypto.randomUUID();
-        this.games[id] = {game,p1:pid1,p2:pid2}
+        if (Math.random() > 0.5) {
+            [p1, p2] = [p1, p2];
+        }
+        let game = new Game(p1, p2, id, this.io);
+        this.games[id] = game;
+        return id;
     }
     removeGame(gid) {
         delete this.games[gid];
@@ -23,29 +28,31 @@ class GameManager {
     }
 }
 class Game {   
-    
-    constructor(p1,p2) {
+    constructor(p1,p2,id,io) {
         this.gameState = new Array(64);
         this.players = [p1,p2];
+
+
         this.turn = 0;
         this.moveCount=0;
         this.validator = new moveValidator(this);
+        this.socketManager = new socketManager(this, io);
+        this.gid = id;
+        
+        this.socketManager.addSocketsToRoom();
+        this.socketManager.emitGameStart();
     }
     isOccupied(i) {
         return this.gameState[i]!=null;
     }
-    move(pid, move, gameState = this.gameState) {
-        let nessesaryTurn = this.players.indexOf(pid);
-        if (pid>=0) {
-            if (this.turn==nessesaryTurn) {
-                this.#move(move, gameState);
-            }
+    getTeam(pid) {
+        if (this.players[0].id === pid) {
+            return 'w';
+        } else {
+            return 'b';
         }
     }
-    #move(move, gameState) {
-        this.moveCount++;
-        this.turn = (this.turn+1)%2;
-    }
+
 
     
 
@@ -100,5 +107,41 @@ class moveValidator {
 
     }
 }
+class socketManager {
+    constructor(ownerGame, io) {
+        this.io = io;
+        this.game = ownerGame;
+        this.socket1 = ownerGame.players[0].socket;
+        this.socket2 = ownerGame.players[1].socket;
+        this.room = ownerGame.gid;
+    }
+    _emit(eventName, data) {
+        this.io.to(this.room).emit(eventName, data);
+    }
+    addSocketsToRoom() {
+        this.socket1.join(this.room);
+        this.socket2.join(this.room);
+    }
+    emitGameStart() {
+        const gameState = this.game.getGameState();
+        this.socket1.emit('game-start', {
+            team: this.game.getTeam(this.game.players[0].id),
+            opponent: {name:this.game.players[1].username},
+            me: {username:this.game.players[0].username},
+        })
+        this.socket2.emit('game-start', {
+            team: this.game.getTeam(this.game.players[1].id),
+            opponent: {name:this.game.players[0].username},
+            me: {username:this.game.players[1].username},
+        })
+    }
+    emitGameState() {
+        const gameState = this.game.getGameState();
+        this.io.to(this.room).emit('game-state-update', gameState);
+    }
+    emitMove(move) {
+        this.io.to(this.room).emit('player-move', move);
+    }
+}
 
-module.exports = GameManager
+module.exports = {GameManager}

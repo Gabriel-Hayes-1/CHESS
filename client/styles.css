@@ -14,7 +14,7 @@ body {
     position: fixed;
     height: 100vh;
     width: 100vw;
-    grid-template-columns: repeat(6, 1fr);
+    grid-template-columns: 1fr 5fr;
     grid-template-rows: repeat(8, 1fr);
 }
 #sidebar {
@@ -25,6 +25,8 @@ body {
     padding:0 20px;
     display: flex;
     flex-direction: column;
+    transform: translateX(0%);
+    transition: transform 0.3s ease;
 }
 #app-title {
     margin:15px 0;
@@ -64,26 +66,83 @@ body {
 .page.active {
     display: block;
 }
+.card-page {
+    display: none;
+    width: 100%;
+    height: 100%;
+}
+.card-page.active {
+    display: block;
+}
 #play-container {
-    display: flex;
+    display: grid;
     gap: 2rem;
-    align-items: center;
+    grid-template-columns: auto auto;    
     justify-content: center;
+    align-items: start;
+    place-items: center;
     width: 100%;
     height: 100%;
     max-width: 1400px;
-    margin: 0 auto;
+    box-sizing: border-box;
+    overflow-y: auto;
+    padding:1rem 2rem;
+}
+@media (max-width:900px) {
+    #play-container {
+        grid-template-columns: 1fr;
+    }
+    #game-card {
+        width: min(80vh, 80vw, 100%) !important;
+        max-width: 700px;
+        height: auto; /* let content determine height */
+    }
 }
 
-#game {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex: 0 0 auto;
+@media only screen and (max-width: 600px) {
+    #app {
+        grid-template-columns: 1fr;
+    }
+
+    #sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        height: 100%;
+        width: 250px;
+        transform: translateX(-100%);
+        z-index: 1000;
+    }
+    #sidebar.open {
+        transform: translateX(0);
+    }
+    #sidebar-toggle {
+        display: block;
+        position: absolute;
+        top: 15px;
+        left: 15px;
+        background-color: #333;
+        color: white;
+        border: none;
+        padding: 20px;
+        cursor: pointer;
+        z-index: 100;
+        border-radius: 100px;
+        border: 1px solid #555;
+        background-image: url(./assets/icons/menu.svg);
+        background-repeat: no-repeat;
+        background-size: 50%; 
+        background-position: center;
+    }
+    
+    #play-container{
+        padding-top:5rem;
+    }
 }
+
 
 #board {
-    width: min(70vh, 70vw);
+    width: min(80vh, 80vw, 100%);
     max-width: 700px;
     aspect-ratio: 1 / 1;
     background-color: #222;
@@ -164,7 +223,7 @@ p {
     height:50px;
 }
 
-.setting-btn {
+.page-btn {
     padding: 10px 22px;
     font-size: 15px;
     border: 1px solid transparent;
@@ -172,16 +231,18 @@ p {
     transition: all 0.2s ease;
     letter-spacing: 0.5px;
 }
+.page-btn:hover {
+    transform: translateY(-2px);
+}
+.page-btn:active {
+    transform: translateY(0);
+}
 #signup {
     background-color:#23a258;
     color: white;
 }
 #signup:hover {
-    transform: translateY(-2px);
     background-color: #2fce72;
-}
-#signup:active {
-    transform: translateY(0);
 }
 #login {
     background: #2c2f36;
@@ -190,10 +251,6 @@ p {
 }
 #login:hover {
     background: #3a3f47;
-    transform: translateY(-2px);
-}
-#login:active {
-    transform: translateY(0);
 }
 #logout {
     background: #c0392b;
@@ -201,12 +258,8 @@ p {
 }
 #logout:hover {
     background: #e74c3c;
-    transform: translateY(-2px);
 }
-#logout:active {
-    transform: translateY(0);
-    
-}
+
 .setting-input-text {
     padding: 8px 12px;
     border: 1px solid #555;
@@ -236,7 +289,26 @@ p {
     height: 100%;
 }
 #find-game {
-    padding:10px 20px;
+    width:60%;
+    padding:10px 0;
     font-size:16px;
     cursor:pointer;
+}
+#find-game:disabled {
+    color: #ddd;
+    cursor: default;
+}
+#cancel-find-game {
+    width:60%;
+    padding:10px 0;
+    font-size:16px;
+    cursor:pointer;
+    background-color: #c0392b;
+}
+#matchmaking-feedback {
+    min-height: 50px;
+}
+
+#sidebar-toggle {
+    display: none;
 }

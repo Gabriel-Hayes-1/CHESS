@@ -1,21 +1,32 @@
 const socket = io();
 
-async function startMatchmaking() {
-    const res = await fetch('/api/findgame', {
-        method: 'POST', 
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ foo: 'bar' })
+function startMatchmaking() {
+    return new Promise((resolve) => {
+        socket.emit("joinQueue", (success, message) => {
+            if (success) {
+                resolve({ success: true });
+            } else {
+                resolve({
+                    success: false,
+                    message: message || "Failed to join matchmaking queue"
+                });
+            }
+        });
     });
-    const data = await res.json();
-    if (data.success) {
-        console.log('Matchmaking started successfully');
-        return true;
-    } else {
-        console.error('Failed to start matchmaking');
-        return false;
-    }
+}
+function cancelMatchmaking() {
+    return new Promise((resolve)=>{
+        socket.emit("cancelQueue", (success, message)=>{
+            if (success) {
+                resolve({success:true});
+            } else {
+                resolve({
+                    success:false,
+                    message: message || "Failed to cancel matchmaking"
+                })
+            }
+        })
+    })
 }
 
 async function me() {
@@ -94,9 +105,8 @@ async function logout() {
 }
 
 
-socket.on('game-begin', (gameData) => {
-    const opponentName = gameData.opponentName;
-    const team = gameData.team; // 'w' or 'b'
+socket.on('game-start', (gameData) => {
+    changeCardPage("in-game")
 })
 
 me().then(user=>{

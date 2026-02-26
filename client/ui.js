@@ -1,6 +1,7 @@
 const sidebar = document.getElementById('sidebar');
 const container = document.getElementById('page-content-container');
 const select = document.getElementById('theme-select');
+const sidebarToggle = document.getElementById('sidebar-toggle'); 
 
 const COLORS = {
     classic:   ['#f0d9b5', '#b58863'],
@@ -9,17 +10,36 @@ const COLORS = {
     steel:     ['#ededed', '#8a8a8a'],
     parchment: ['#f6f1e3', '#b8a887'],
     marble:    ['#f2f2ee', '#2a2a2a'],
-    slate:     ['#d9d9d9', '#7b7f85'],   // replaces "tile"
-    ash:       ['#cfcfcf', '#5f5f5f'],   // softer dark/steel hybrid
-    olive:     ['#d6dbc8', '#7b8461'],   // forest, but civilized
+    slate:     ['#d9d9d9', '#7b7f85'],
+    ash:       ['#cfcfcf', '#5f5f5f'],   
+    olive:     ['#d6dbc8', '#7b8461'],   
     dusk:      ['#3a3f4a', '#1f232b'],
-   // midnight, but neutral
     sand:      ['#e7dcc6', '#b3a17a'],  
-    clay:      ['#d1a08a', '#7a4a3a'],   // softened clay
+    clay:      ['#d1a08a', '#7a4a3a'],  
 };
 
 let color = COLORS["classic"]
 
+
+function hexToRGB(hexString) {
+    const r = hexString.slice(1,3);
+    const g = hexString.slice(3,5);
+    const b = hexString.slice(5,7);
+    return [parseInt(r,16), parseInt(g,16), parseInt(b,16)];
+}
+function findAverageofTwoHex(hex1, hex2) {
+    const rgb1 = hexToRGB(hex1);
+    const rgb2 = hexToRGB(hex2);
+    return [
+        (rgb1[0]+rgb2[0])/2,
+        (rgb1[1]+rgb2[1])/2,
+        (rgb1[2]+rgb2[2])/2,
+    ]
+}
+
+sidebarToggle.addEventListener("mousedown",(e)=>{
+
+})
 
 function switchPage(page) {
     // Show the requested page and hide all others. Pages are regular DOM elements with class "page".
@@ -135,7 +155,7 @@ function feedback(feedbackElem,warnLevel,str) {
         textSpan.classList.add("success");
     }
 
-    textSpan.textContent = str;
+    textSpan.innerHTML = str;
     feedbackElem.appendChild(textSpan);
 }
 
@@ -171,7 +191,7 @@ loginBtn.addEventListener("click", async ()=>{
     if (result.success) {
         uiLoggedIn(username);
     } else {
-
+        feedback(loginFeedback,"warning",result.message)
     }
 })
 
@@ -183,6 +203,66 @@ logoutBtn.addEventListener("click", async ()=>{
         feedback(logoutFeedback,"warning",result.message || "Logout failed");
     }
 })
+
+const requestGameBtn = document.getElementById("find-game");
+const cancelGameBtn = document.getElementById("cancel-find-game");
+const matchmakeFeedback = document.getElementById("matchmaking-feedback");
+requestGameBtn.addEventListener("click",async ()=>{
+    const result = await startMatchmaking();
+
+    if (result.success) {
+        setMatchmakingUI(true)
+        feedback(matchmakeFeedback,"", "Waiting for game<span class='dots'></span>");
+    } else {
+        feedback(matchmakeFeedback,"warning", result.message || "Failed to start matchmaking");
+    }
+});
+cancelGameBtn.addEventListener("click",async ()=>{
+    const result = await cancelMatchmaking();
+
+    if (result.success) {
+        setMatchmakingUI(false);
+        feedback(matchmakeFeedback,"","")
+    } else {
+        console.log(result.message);
+    }
+})
+
+function setMatchmakingUI(setState) {
+    if (setState) {
+        cancelGameBtn.classList.remove("hidden");
+        requestGameBtn.classList.add("hidden");
+    } else {
+        cancelGameBtn.classList.add("hidden");
+        requestGameBtn.classList.remove("hidden");
+    }
+}
+
+setInterval(()=>{
+    const dots = document.querySelectorAll(".dots");
+    dots.forEach(elem=>{
+        const currentText = elem.textContent;
+        if (/^\.*$/.test(currentText)) {
+            let currentNum = currentText.length
+            if (currentNum >= 3) {
+                elem.textContent = '';
+            } else {
+                elem.textContent += '.';
+            }
+        }
+    })
+},500)
+
+function changeCardPage(pageId) {
+    const cardPages = document.querySelectorAll(".card-page");
+    cardPages.forEach(page=>{
+        if (page.id === pageId) {
+            page.classList.add("active");
+        } else {
+            page.classList.remove("active");
+        }
+    })
+}
 
 
 // Default page
