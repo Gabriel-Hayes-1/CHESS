@@ -30,16 +30,12 @@ function cancelMatchmaking() {
 }
 
 async function me() {
-    const res = await fetch('/api/me',{credentials:"include"});
-    const data = await res.json()
+    const res = await fetch('/api/me', { credentials: "include" });
+    const data = await res.json();
     if (res.ok) {
         return data.user;
     } else {
-        if (res.status === 401) {
-            console.log('Not logged in: ', data.message);
-        } else {
-            console.error('Failed to fetch user info:', data.message);
-        }
+        console.error('Failed to fetch user info:', data.message);
         return null;
     }
 }

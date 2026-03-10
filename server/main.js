@@ -162,9 +162,31 @@ app.post("/api/logout", authenticate, (req,res)=>{
     });
     res.status(200).json({message: 'Logout successful'});
 })
-app.get("/api/me",authenticate, (req,res)=>{
-    res.status(200).json({user: { id: req.user.id, username: req.user.username } });
-})
+app.get("/api/me", (req, res) => {
+    const token = req.cookies.sessionToken;
+
+    if (!token) {
+        return res.status(200).json({ user: null });
+    }
+
+    jwt.verify(token, JWT_SECRET, (err, decoded) => {
+        if (err) {
+            return res.status(200).json({ user: null });
+        }
+
+        const user = database[decoded.username];
+
+        if (!user) {
+            res.clearCookie('sessionToken', {
+                httpOnly: true,
+                secure: false
+            });
+            return res.status(200).json({ user: null });
+        }
+
+        res.status(200).json({ user: { id: decoded.id, username: decoded.username } });
+    });
+});
 
 io.use((socket,next)=>{
     let token = null;

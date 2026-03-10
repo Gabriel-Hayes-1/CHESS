@@ -64,10 +64,13 @@ const onOpen = {
     },
     play: (playObj) => {
         // when returning to the play page redraw the board if the game exists
+        /* trying to comment out to see if this is the issue
         if (window.__CHESS_GAME && typeof window.__CHESS_GAME.draw === 'function') {
             try { window.__CHESS_GAME.draw(); } catch (err) { console.error('redraw failed', err); }
         }
+        */
     },
+
 }
 
 sidebar.querySelectorAll("button").forEach(e=>{
@@ -267,3 +270,26 @@ function changeCardPage(pageId) {
 
 // Default page
 switchPage("play");
+
+/*
+let listenerActive = false;
+document.addEventListener("keydown",(e)=>{
+    if (e.key === "F3") {
+        e.preventDefault();
+        const debugKey = "D";
+        const onDebugKey = (event)=>{
+            if (event.key.toUpperCase() === debugKey) {
+                __CHESS_GAME.debug = !__CHESS_GAME.debug;
+                console.log("Debug mode: ", __CHESS_GAME.debug);
+            }
+            document.removeEventListener("keydown", onDebugKey);
+            listenerActive = false;
+        }
+        if (!listenerActive) {
+            document.addEventListener("keydown", onDebugKey);
+            listenerActive = true;
+        }
+    }
+})
+*/
+

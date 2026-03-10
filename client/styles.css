@@ -117,13 +117,12 @@ body {
         transform: translateX(0);
     }
     #sidebar-toggle {
-        display: block;
+        display: block !important;
         position: absolute;
         top: 15px;
         left: 15px;
         background-color: #333;
         color: white;
-        border: none;
         padding: 20px;
         cursor: pointer;
         z-index: 100;
