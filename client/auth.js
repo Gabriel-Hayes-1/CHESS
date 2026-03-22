@@ -1,34 +1,3 @@
-const socket = io();
-
-function startMatchmaking() {
-    return new Promise((resolve) => {
-        socket.emit("joinQueue", (success, message) => {
-            if (success) {
-                resolve({ success: true });
-            } else {
-                resolve({
-                    success: false,
-                    message: message || "Failed to join matchmaking queue"
-                });
-            }
-        });
-    });
-}
-function cancelMatchmaking() {
-    return new Promise((resolve)=>{
-        socket.emit("cancelQueue", (success, message)=>{
-            if (success) {
-                resolve({success:true});
-            } else {
-                resolve({
-                    success:false,
-                    message: message || "Failed to cancel matchmaking"
-                })
-            }
-        })
-    })
-}
-
 async function me() {
     const res = await fetch('/api/me', { credentials: "include" });
     const data = await res.json();
@@ -40,7 +9,7 @@ async function me() {
     }
 }
 
-async function signup(username, password) {
+export async function signup(username, password) {
     try {
         const res = await fetch('/api/signup', {
             method: 'POST',
@@ -64,7 +33,7 @@ async function signup(username, password) {
     }
 }
 
-async function login(username,password) {
+export async function login(username,password) {
     const res = await fetch('/api/login', {
         method: 'POST',
         headers: {
@@ -82,7 +51,7 @@ async function login(username,password) {
     }
 }
 
-async function logout() {
+export async function logout() {
     const res = await fetch('/api/logout', {
         method: 'POST',
         headers: {
@@ -100,17 +69,16 @@ async function logout() {
     }
 }
 
+export function checkLoginStatus({onSuccess,onFailure}) {
+    me().then(user => {
+        if (user) {
+            onSuccess(user.username);
+        } else {
+            onFailure();
+        }
+    }).catch(err => {
+        console.error('Error checking login status:', err);
+    })
+}
 
-socket.on('game-start', (gameData) => {
-    changeCardPage("in-game")
-})
 
-me().then(user=>{
-    if (user) {
-        uiLoggedIn(user.username);
-    } else {
-        uiLoggedOut();
-    }
-}).catch(err=>{
-    console.error('Error checking login status:', err);
-})

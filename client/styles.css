@@ -6,7 +6,7 @@ body {
 }
 @font-face {
     font-family: "ChocolateSans";
-    src: url(./assets/ChocolateClassicalSans-Regular.ttf);
+    src: url(./assets/ChocolateClassicalSansRegular.woff2) format(woff2);
 }
 #app {
     font-family:ChocolateSans, Arial, Helvetica;
@@ -66,27 +66,34 @@ body {
 .page.active {
     display: block;
 }
+#game-card {
+    width: clamp(260px, 25vw, 360px);
+    height: clamp(300px, 70vh, 600px);
+    background-color: #333;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+}
 .card-page {
     display: none;
     width: 100%;
     height: 100%;
 }
 .card-page.active {
-    display: block;
+    display: flex !important;
 }
 #play-container {
     display: grid;
     gap: 2rem;
-    grid-template-columns: auto auto;    
+    grid-template-columns: 1fr auto;
     justify-content: center;
     align-items: start;
-    place-items: center;
+    justify-content: center;
+    align-items: center;
     width: 100%;
     height: 100%;
     max-width: 1400px;
     box-sizing: border-box;
     overflow-y: auto;
-    padding:1rem 2rem;
+    padding: 1rem 5vw;
 }
 @media (max-width:900px) {
     #play-container {
@@ -141,18 +148,14 @@ body {
 
 
 #board {
-    width: min(80vh, 80vw, 100%);
+    width: 100%;
     max-width: 700px;
     aspect-ratio: 1 / 1;
     background-color: #222;
+    margin: 0 auto; 
 }
 
-#game-card {
-    width: clamp(260px, 25vw, 360px);
-    height: clamp(300px, 60vh, 600px);
-    background-color: #333;
-    box-shadow: 0 0 10px rgba(0,0,0,0.3);
-}
+
 
 .scroll {
     overflow-y: auto;
@@ -190,36 +193,52 @@ p {
     display:flex;
     flex-direction: row-reverse;
     gap:16px;
+    align-items: center;
 }
 #theme-select {
-    height:100%;
     border: 2px solid #555;
     transition: background-color 0.3s;
 }
+
 #theme-select:hover {
     background-color: #333;
 }
+
 #theme-dropdown {
     position: absolute;
     background-color: #333;
     border: 2px solid #555;
     display: grid;
-    grid-template-columns: repeat(3,1fr);
-    grid-auto-rows: max-content; /* or a fixed height */
+    grid-template-columns: repeat(3, 1fr);
+    grid-auto-rows: max-content;
 }
+
 .hidden {
-    display:none !important;
+    display: none !important;
 }
+
 .colorpair {
-    display:flex;
-    flex-direction: row-reverse;
-    height:max-content;   
+    position: relative;
+    width: 50px;
+    height: 50px;
     border: 1px solid #00000000;
-    cursor:pointer; 
+    cursor: pointer;
+    flex-shrink: 0;
 }
+
+.colorpair .color:nth-child(1) {
+    clip-path: polygon(0 0, 100% 0, 0 100%);
+}
+
+.colorpair .color:nth-child(2) {
+    clip-path: polygon(100% 0, 100% 100%, 0 100%);
+}
+
 .color {
-    aspect-ratio:1/1;
-    height:50px;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
 }
 
 .page-btn {
@@ -280,7 +299,6 @@ p {
 
 
 #not-in-game {
-    display: flex;
     flex-direction: column;
     gap:15px;
     align-items: center;
@@ -307,6 +325,10 @@ p {
 #matchmaking-feedback {
     min-height: 50px;
 }
+#in-game {
+    background-color: white;
+}
+
 
 #sidebar-toggle {
     display: none;

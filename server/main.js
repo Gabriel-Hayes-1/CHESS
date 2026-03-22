@@ -1,14 +1,17 @@
-const express = require('express');
-const http = require('http');
-const path = require('path');
-const { Server } = require('socket.io');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const crypto = require('crypto');
-const cookieParser = require('cookie-parser');
-const cookie = require('cookie');
-const game = require('./game');
-const { match } = require('assert');
+import express from 'express';
+import http from 'http';
+import path from 'path';
+import { Server } from 'socket.io';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
+import cookieParser from 'cookie-parser';
+import * as cookie from 'cookie';
+import * as game from './game.js';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 
 const app = express();
 const server = http.createServer(app);
@@ -26,21 +29,12 @@ const PORT = process.argv[2] || 3000; // Use command-line argument or default to
 app.use(cookieParser());
 app.use(express.json());
 
-app.use(express.static("client", {
-  setHeaders: (res, path) => {
-    if (/\.(html|css|js)$/.test(path)) {
-      res.setHeader("Cache-Control", "no-store");
-    }
-  }
-}));
-
-app.use("/assets", express.static("client/assets", {
-  maxAge: "1",
-  immutable: true
-}));
 
 // Serve everything in the client directory
 const clientDir = path.join(__dirname, '../client');
+const sharedDir = path.join(__dirname, '../shared');
+
+app.use('/shared', express.static(sharedDir));
 app.use(express.static(clientDir));
 
 function guestName() {
@@ -215,7 +209,7 @@ io.on('connection', (socket) => {
     if (accountId) {
         username = socket.userId.username;
     } else {
-        username = `Guest-${guestName()}`;
+        username = guestName();
     }
 
     connectedPlayers.set(socketId, {
@@ -269,7 +263,7 @@ function checkQueue() {
         const [player1Id, player2Id] = Array.from(matchmakingQueue).slice(0, 2);
         matchmakingQueue.delete(player1Id);
         matchmakingQueue.delete(player2Id);
-        gameManager.addGame(connectedPlayers.get(player1Id), connectedPlayers.get(player2Id));
+        gameManager.createGame(connectedPlayers.get(player1Id), connectedPlayers.get(player2Id));
     }
 }
 

@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <title>Chess.steelseas</title>
     <link rel="stylesheet" href="styles.css">
-    <!--<link rel="preload" href="assets/ChocolateClassicalSans-Regular.ttf" as="font" type="font/ttf" crossorigin> !-->
     <link rel="icon" href="assets/pieces/wp.svg" media="(prefers-color-scheme: dark)">
     <link rel="icon" href="assets/pieces/bp.svg" media="(prefers-color-scheme: light)">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -101,8 +100,10 @@
         
     </div>
     <script src="/socket.io/socket.io.js"></script>
-    <script src="network.js"></script>
-    <script src="ui.js"></script>
-    <script src="main.js"></script>
+    <script type="module" src="settings.js"></script>
+    <script type="module" src="auth.js"></script>
+    <script type="module" src="ui.js"></script>
+    <script type="module" src="chessclient.js"></script>
+    <script type="module" src="main.js"></script>
 </body>
 </html>

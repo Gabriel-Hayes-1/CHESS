@@ -1,41 +1,13 @@
 const sidebar = document.getElementById('sidebar');
 const container = document.getElementById('page-content-container');
-const select = document.getElementById('theme-select');
+const boardColorSelect = document.getElementById('theme-select');
 const sidebarToggle = document.getElementById('sidebar-toggle'); 
 
-const COLORS = {
-    classic:   ['#f0d9b5', '#b58863'],
-    dark:      ['#2f2f2f', '#141414'],
-    felt:      ['#e2dcc7', '#6f8f5a'],
-    steel:     ['#ededed', '#8a8a8a'],
-    parchment: ['#f6f1e3', '#b8a887'],
-    marble:    ['#f2f2ee', '#2a2a2a'],
-    slate:     ['#d9d9d9', '#7b7f85'],
-    ash:       ['#cfcfcf', '#5f5f5f'],   
-    olive:     ['#d6dbc8', '#7b8461'],   
-    dusk:      ['#3a3f4a', '#1f232b'],
-    sand:      ['#e7dcc6', '#b3a17a'],  
-    clay:      ['#d1a08a', '#7a4a3a'],  
-};
-
-let color = COLORS["classic"]
+import { updateSetting, settings, options } from "./settings.js";
 
 
-function hexToRGB(hexString) {
-    const r = hexString.slice(1,3);
-    const g = hexString.slice(3,5);
-    const b = hexString.slice(5,7);
-    return [parseInt(r,16), parseInt(g,16), parseInt(b,16)];
-}
-function findAverageofTwoHex(hex1, hex2) {
-    const rgb1 = hexToRGB(hex1);
-    const rgb2 = hexToRGB(hex2);
-    return [
-        (rgb1[0]+rgb2[0])/2,
-        (rgb1[1]+rgb2[1])/2,
-        (rgb1[2]+rgb2[2])/2,
-    ]
-}
+
+
 
 sidebarToggle.addEventListener("mousedown",(e)=>{
 
@@ -49,28 +21,8 @@ function switchPage(page) {
     const target = document.getElementById(page);
     if (target && target.classList.contains('page')) {
         target.classList.add('active');
-        // call page-specific initializer if present
-        if (onOpen[page]) {
-            try { onOpen[page](target); } catch (err) { console.error('onOpen.'+page+' failed', err); }
-        }
+        
     }
-}
-
-const onOpen = {
-    settings: (settingsObj)=>{
-        const colors = select.querySelectorAll(".color");
-        colors[0].style.backgroundColor = color[0];
-        colors[1].style.backgroundColor = color[1];
-    },
-    play: (playObj) => {
-        // when returning to the play page redraw the board if the game exists
-        /* trying to comment out to see if this is the issue
-        if (window.__CHESS_GAME && typeof window.__CHESS_GAME.draw === 'function') {
-            try { window.__CHESS_GAME.draw(); } catch (err) { console.error('redraw failed', err); }
-        }
-        */
-    },
-
 }
 
 sidebar.querySelectorAll("button").forEach(e=>{
@@ -87,13 +39,13 @@ function toTitleCase(str) {
 }
 
 const colorDropdown = document.getElementById("theme-dropdown");
-select.addEventListener("click",()=>{
+boardColorSelect.addEventListener("click",()=>{
     colorDropdown.classList.toggle("hidden");
     colorDropdown.innerHTML = '';
-    colorDropdown.style.top = (select.getBoundingClientRect().bottom + "px");
+    colorDropdown.style.top = (boardColorSelect.getBoundingClientRect().bottom + "px");
 
     //populate with colors 
-    for (let [colorname,colorpair] of Object.entries(COLORS)) {
+    for (let [colorname,colorpair] of Object.entries(options.boardColors)) {
         let option = document.createElement("div");
         option.classList.add("colorpair");
         option.title = toTitleCase(colorname.replace(/_/g,' '));
@@ -110,16 +62,22 @@ select.addEventListener("click",()=>{
         option.appendChild(col2);
 
         option.addEventListener("click",()=>{
-            color = colorpair;
+            updateSetting("boardColors",colorpair)
             colorDropdown.classList.add("hidden");
-            onOpen.settings();
+            loadSettingsUi()
         })
-
 
         colorDropdown.appendChild(option);
     }
 })
 
+function loadSettingsUi() {
+    Array.from(boardColorSelect.children).forEach((e,i)=>{
+        e.style.backgroundColor = settings.boardColors[i]
+    })
+    //add more stuff for each setting...
+}
+loadSettingsUi()
 
 const signupBtn = document.getElementById("signup");
 const loginBtn = document.getElementById("login");
@@ -133,7 +91,7 @@ const logInSetting = document.getElementById("login-setting");
 const logOutSetting = document.getElementById("logout-setting");
 const loginStatus = document.getElementById("loginStatus");
 
-function uiLoggedIn(username) {
+export function uiLoggedIn(username) {
     logInSetting.classList.add("hidden");
     logOutSetting.classList.remove("hidden");
     loginStatus.textContent = "Logged in as "+username;
@@ -142,7 +100,7 @@ function uiLoggedIn(username) {
     passwordInput.value = '';
     passwordConfirmInput.value = '';
 }
-function uiLoggedOut() {
+export function uiLoggedOut() {
     logInSetting.classList.remove("hidden");
     logOutSetting.classList.add("hidden");
     loginStatus.textContent = "You are not logged in.";
@@ -210,26 +168,32 @@ logoutBtn.addEventListener("click", async ()=>{
 const requestGameBtn = document.getElementById("find-game");
 const cancelGameBtn = document.getElementById("cancel-find-game");
 const matchmakeFeedback = document.getElementById("matchmaking-feedback");
-requestGameBtn.addEventListener("click",async ()=>{
-    const result = await startMatchmaking();
 
-    if (result.success) {
-        setMatchmakingUI(true)
-        feedback(matchmakeFeedback,"", "Waiting for game<span class='dots'></span>");
-    } else {
-        feedback(matchmakeFeedback,"warning", result.message || "Failed to start matchmaking");
-    }
-});
-cancelGameBtn.addEventListener("click",async ()=>{
-    const result = await cancelMatchmaking();
+export function initMatchmakingUI(networker) {
+    requestGameBtn.addEventListener("click", async () => {
+        if (!networker) return;
+        const result = await networker.joinQueue();
 
-    if (result.success) {
-        setMatchmakingUI(false);
-        feedback(matchmakeFeedback,"","")
-    } else {
-        console.log(result.message);
-    }
-})
+        if (result.success) {
+            setMatchmakingUI(true)
+            feedback(matchmakeFeedback, "", "Waiting for game<span class='dots'></span>");
+        } else {
+            feedback(matchmakeFeedback, "warning", result.message || "Failed to start matchmaking");
+        }
+    });
+    cancelGameBtn.addEventListener("click", async () => {
+        if (!networker) return;
+        const result = await networker.leaveQueue();
+
+        if (result.success) {
+            setMatchmakingUI(false);
+            feedback(matchmakeFeedback, "", "")
+        } else {
+            console.log(result.message);
+        }
+    })
+}
+
 
 function setMatchmakingUI(setState) {
     if (setState) {
@@ -256,7 +220,7 @@ setInterval(()=>{
     })
 },500)
 
-function changeCardPage(pageId) {
+export function changeCardPage(pageId) {
     const cardPages = document.querySelectorAll(".card-page");
     cardPages.forEach(page=>{
         if (page.id === pageId) {
