@@ -1,37 +1,12 @@
 import { GameState, MoveValidator, xyToI,iToXY } from "../shared/chess.js";
-import { settings, options } from "./settings.js";
-
-const startPos = [
-        "br","bn","bb","bq","bk","bb","bn","br",
-        "bp","bp","bp","bp","bp","bp","bp","bp",
-        null,null,null,null,null,null,null,null,
-        null,null,null,null,null,null,null,null,
-        null,null,null,null,null,null,null,null,
-        null,null,null,null,null,null,null,null,
-        "wp","wp","wp","wp","wp","wp","wp","wp",
-        "wr","wn","wb","wq","wk","wb","wn","wr"
-    ]
-
-
-
-function strGameStatetoObj(gameState) {
-    return gameState.map(tileStr => {
-        if (tileStr) {
-            const color = tileStr[0];
-            const piece = tileStr[1];
-            return { color, piece };
-        }
-        return null;
-    })
-}
+import { settings } from "./settings.js";
 
 export class Networker {
     constructor() {
         this._listeners = {};
         this.socket = io();
 
-        this.socket.on("game-start",(data)=>this.emit("game-start",data))
-
+        this.socket.onAny((eventName, ...args) => this.emit(eventName, ...args));
     }
     on(eventName, callback) {
         if (!this._listeners[eventName]) this._listeners[eventName] = [];
@@ -54,7 +29,6 @@ export class Networker {
             })
         })
     }
-
     joinQueue() {
         return new Promise((resolve) => {
             this.socket.emit("joinQueue", (success, message) => {
@@ -69,7 +43,6 @@ export class Networker {
             });
         });
     }
-
     leaveQueue() {
         return new Promise((resolve) => {
             this.socket.emit("cancelQueue", (success, message) => {
@@ -84,12 +57,27 @@ export class Networker {
             })
         })
     }
+    resign() {
+        return new Promise((resolve) => {
+            this.socket.emit("resign", (success, message) => {
+                resolve({ success, message})
+            })
+        })
+    }
+    requestDraw() {
+        return new Promise((resolve) => {
+            this.socket.emit("draw", (success, message) => {
+                resolve({ success, message })
+            })
+        })
+    }
 }
 
 export class Game {
-    constructor(canvas, team=null, trial=false) {
+    constructor(canvas, networkMove, team=null, trial=false) {
         this.team = team;
         this.trial = trial;
+        this.sendMove = networkMove;
 
         this.allowMoves = true;
         this.validMoves = {final:[],capture:[],exposesKing:[],total:[],noCaptures:[]};
@@ -116,6 +104,12 @@ export class Game {
 
     }
 
+    _myTurn() {
+        if (this.trial) return true;
+        if (this.GameState.turn==this.team) return true;
+        return false;
+    }
+
     resetValidMoves() {
         this.validMoves = {final:[],capture:[],exposesKing:[],total:[],noCaptures:[]};
     }
@@ -124,20 +118,11 @@ export class Game {
         if (index >= 0 && index < 64) {
             const piece = this.GameState.getTile(index);
             if (!this.InputHandler.mouseDown) {
-                if (
-                    (piece &&
-                    (
-                        piece.color === this.team
-                        || this.team == null
-                    ) && this.allowMoves
-                    ) || (this.selectedPiece !== null
-                        && this.validMoves.final.find(obj=>obj.move === index)
-                    )
-                ) {
-                    this.canvas.style = "cursor: pointer;";
-                } else {
-                    this.canvas.style = "cursor: default;";
-                }
+                const isOwnPiece = piece && (piece.color === this.team || this.team === null);
+                const canPickUp = isOwnPiece && this.allowMoves && this._myTurn()
+                const isValidDrop = this.selectedPiece !== null && this.validMoves.final.some(obj => obj.move === index);
+
+                this.canvas.style.cursor = (canPickUp || isValidDrop) ? "pointer" : "default";
             }
         }
     }
@@ -149,7 +134,7 @@ export class Game {
         // Check if this is a valid capture target before overwriting validMoves
         const isValidMove = this.validMoves.total.find(obj => obj.move === index);
 
-        if (isMyTeam && this.allowMoves && !isValidMove) {  // <-- add !isValidMove
+        if (isMyTeam && this.allowMoves && !isValidMove && this._myTurn()) { 
             let [px, py] = iToXY(index);
             [px, py] = this.teamPerspective(px, py);
             px = px * this.tileSize[0];
@@ -168,58 +153,47 @@ export class Game {
             }
             this.validMoves = this.Validator.getValidMoves(this.GameState, index);
             this.canvas.style = "cursor: grabbing;";
-        } else if (isValidMove) {
-            // We're dragging onto a capture target — keep heldPiece for mouseUp
-            // but don't overwrite validMoves
+        } else if (isValidMove && this._myTurn()) {
             this.canvas.style = "cursor: grabbing;";
         }
     }
     fireMouseUp(index) {
-        let moveFromIndex = this.heldPiece
-                ? this.heldPiece.origLocation
-                : null;
+        const moveFromIndex = this.heldPiece?.origLocation ?? null;
+        const inBounds = index >= 0 && index < 64;
 
-        if (moveFromIndex != null && index >= 0 && index < 64) {
-            let move = this.validMoves.final.find(obj=>obj.move ===index)
-            if (
-                this.allowMoves && move && move.move!==null
-            ) {
-                const formattedMove = { from: moveFromIndex, to: index, promotion: null, castle: move.castle, enPassant: move.enPassant }
+        if (moveFromIndex !== null && inBounds) {
+            const move = this.validMoves.final.find(obj => obj.move === index);
 
-                if (this.trial) {
-                    this.GameState = this.GameState.applyMove(formattedMove).state;
-                } else {
-                    networker.move(formattedMove);
-                }
+            if (this.allowMoves && move) {
+                const formattedMove = {
+                    from: moveFromIndex,
+                    to: index,
+                    promotion: null,
+                    castle: move.castle,
+                    enPassant: move.enPassant
+                };
+
+                this.trial
+                    ? this.GameState = this.GameState.applyMove(formattedMove).state
+                    : this.sendMove(formattedMove);
+
                 this.selectedPiece = null;
             } else {
-                let moveWithoutCheck = this.validMoves.exposesKing.find(obj=>obj.move ===index);
-                if (this.allowMoves && moveWithoutCheck && moveWithoutCheck.move) {
-                    //king is under attack, warn the king tile
-                    const kingIndex = this.GameState.findFirstPiece(this.heldPiece.piece.color, "k"); //this.team 
-                    if (kingIndex!==null) {
-                        this.Renderer.warnTile(kingIndex);
-                    }
+                const exposedMove = this.validMoves.exposesKing.find(obj => obj.move === index);
+                if (this.allowMoves && exposedMove) {
+                    const kingIndex = this.GameState.findFirstPiece(this.heldPiece.piece.color, "k");
+                    if (kingIndex !== null) this.Renderer.warnTile(kingIndex);
                 }
             }
         }
+
         this.heldPiece = null;
-        if (this.selectedPiece == null) {
-            this.resetValidMoves();
-        }   
-        
+        if (this.selectedPiece === null) this.resetValidMoves();
+
         if (this.allowMoves) {
-            if (
-                this.GameState.getTile(index) &&
-                (
-                    this.GameState.getTile(index).color === this.team
-                    || this.team == null //
-                )
-            ) {
-                this.canvas.style = "cursor: pointer;";
-            } else {
-                this.canvas.style = "cursor: default;";
-            }
+            const tile = this.GameState.getTile(index);
+            const isOwnTile = tile && (tile.color === this.team || this.team === null);
+            this.canvas.style.cursor = (isOwnTile && this._myTurn()) ? "pointer" : "default";
         }
     }
 
@@ -235,29 +209,29 @@ export class Game {
                 // THIS IS WHERE NETWORKING CALLS GO
 
                 const formattedMove = { from: this.selectedPiece, to: index, promotion: null, castle: move.castle, enPassant: move.enPassant }
+                this.Renderer.slidePiece(this.selectedPiece, index, this.GameState.getTile(this.selectedPiece));
+                this.resetValidMoves();
                 if (this.trial) {
-                    this.Renderer.slidePiece(this.selectedPiece, index, this.GameState.getTile(this.selectedPiece));
                     this.GameState = this.GameState.applyMove(formattedMove).state;
-                    this.resetValidMoves();
                 } else {
-                    networker.move(formattedMove);
+                    this.sendMove?.(formattedMove)
                 }
 
 
                 this.selectedPiece = null;
 
             } else if (piece && (piece.color === this.team || this.team == null) && this.allowMoves && index !== this.selectedPiece) {
-                // Re-select a different friendly piece instead of cancelling
+                // reselect clicked friendly piece
                 this.resetValidMoves();
                 this.selectedPiece = index;
                 this.validMoves = this.Validator.getValidMoves(this.GameState, index);
             } else {
-                // Clicked empty square or same piece — deselect
+                //deselect
                 this.resetValidMoves();
                 this.selectedPiece = null;
             }
         } else {
-            if (piece && (piece.color === this.team || this.team == null) && this.allowMoves) {
+            if (piece && (piece.color === this.team || this.team == null) && this.allowMoves && this._myTurn()) {
                 this.selectedPiece = index;
                 this.validMoves = this.Validator.getValidMoves(this.GameState, index);
             }
@@ -278,29 +252,35 @@ export class Game {
         const dt = performance.now() - this.lastDrawTime;
         this.lastDrawTime = performance.now();
 
-        if (this.doDraw) {
-            this.Renderer.clearScreen();
-            this.tileSize=this.Renderer.drawTiles();
-            this.Renderer.stepAnims(dt);
+        
+        this.Renderer.clearScreen();
+        this.tileSize=this.Renderer.drawTiles();
+        this.Renderer.stepAnims(dt);
 
-            if (doPieces) {
-                this.Renderer.drawPieces(this.GameState.board,this.heldPiece);
-                this.Renderer.drawValidMoves(this.validMoves.noCaptures,this.validMoves.capture); 
-                this.Renderer.drawHeldPiece(this.heldPiece, this.InputHandler.mousepos);
-            }
-
-            if (this.debug) {
-                this.Renderer.drawDebugNumbers();
-            }
-            
-        }
         if (doPieces) {
+            this.Renderer.drawPieces(this.GameState.board,this.heldPiece);
+            this.Renderer.drawValidMoves(this.validMoves.noCaptures,this.validMoves.capture); 
+            this.Renderer.drawHeldPiece(this.heldPiece, this.InputHandler.mousepos);
+        }
+
+        if (this.debug) {
+            this.Renderer.drawDebugNumbers();
+        }
+        
+        
+        if (this.doDraw) {
             requestAnimationFrame(() => this.draw());
         }
     }
     loadFromData(gameData) {
         console.log("Set team to ", gameData.team);
         this.team = gameData.team;
+        this.handleStateUpdate(gameData)
+    }
+
+    handleStateUpdate(data) { //data: board, turn
+        this.GameState = GameState.fromBoard(data.board)
+        this.GameState.turn = data.turn
     }
 
     cleanup() {
@@ -308,7 +288,6 @@ export class Game {
         this.doDraw = false;
     }
 }
-window.Game = Game
 
 class Renderer {
     static avgHex = (a, b) =>
@@ -540,7 +519,7 @@ class InputHandler {
             this.mousepos = InputHandler.screenToCanvas(e, rect);
 
             game.fireMouseMove(i);
-        });
+        }, { signal: this._abort.signal });
 
         this.canvas.addEventListener("mousedown", (e) => {
             this.mouseDown = true;
@@ -548,7 +527,7 @@ class InputHandler {
             this.downPos = InputHandler.screenToCanvas(e, rect);
 
             game.fireMouseDown(i,this.w /8);
-        }); 
+        }, { signal: this._abort.signal }); 
 
         this.canvas.addEventListener("mouseup", (e) => {
             this.mouseDown = false;
@@ -566,14 +545,14 @@ class InputHandler {
 
 
 
-        });
+        }, { signal: this._abort.signal });
     }
     cleanup() {
         this._abort.abort()
     }
 }
 const IMAGES = {}
-function loadImages() {
+export async function loadImages() {
     const paths = ["wp", "wr", "wn", "wb", "wq", "wk", "bp", "br", "bn", "bb", "bq", "bk"];
     const promises = paths.map(path => new Promise((resolve, reject) => {
         const img = new Image();
@@ -583,15 +562,4 @@ function loadImages() {
         IMAGES[path] = img;
     }));
     return Promise.all(promises);
-}
-
-export async function init() {
-    const gCanvas = document.getElementById("board")
-    await Promise.all([ 
-        loadImages()
-    ])
-    const game = new Game(gCanvas, null, true);
-    game.GameState = GameState.fromBoard(strGameStatetoObj(startPos));
-    game.draw();
-    window.__CHESS_GAME = game;
 }

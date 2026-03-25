@@ -204,10 +204,11 @@ io.use((socket,next)=>{
 io.on('connection', (socket) => {
     const socketId = socket.id;
     const accountId = socket.userId?.id || null;
-
+    console.log("Logged in with accountId "+ accountId)
     let username;
     if (accountId) {
         username = socket.userId.username;
+        console.log("Found username: ",username)
     } else {
         username = guestName();
     }
@@ -218,6 +219,25 @@ io.on('connection', (socket) => {
         game:null,
         accountId
     });
+
+    socket.on('authenticate',()=>{
+        const cookieHeader = socket.handshake.headers.cookie;
+
+        if (cookieHeader) {
+            const cookies = cookie.parse(cookieHeader)
+            let token = cookies.sessionToken
+            if (token) {
+                try {
+                    const decoded = jwt.verify(token, JWT_SECRET)
+                    socket.userId = decoded
+                    connectedPlayers.get(socketId).username = decoded.username;
+                    connectedPlayers.get(socketId).accountId = decoded.id;
+                } catch {}
+            }
+        }
+    })
+
+
 
     socket.on('joinQueue', (callback)=>{
         const player = connectedPlayers.get(socketId);

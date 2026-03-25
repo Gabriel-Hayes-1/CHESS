@@ -59,7 +59,7 @@ class Game {
     constructor(p1,p2,id,io,validator) {
         this.gid = id;
         this.io = io;
-        this.gs = initBoard();
+        this.gs = GameState.defaultBoard();
         this.validator = validator;
         this.players = [p1,p2];
         this.over = false;
@@ -68,10 +68,11 @@ class Game {
         this.sockets.addSocketsToRoom();
         this.sockets.emitGameStart();
         this.sockets.emitGameState();
+        this.sockets.initListeners();
     }
 
     colorOf(pid) {
-        return this.players[0].id === pid ? "w" : "b";
+        return this.players[0].socket.id === pid ? "w" : "b";
     }
 
     applyMove(pid,move) {
@@ -95,7 +96,7 @@ class Game {
         this.sockets.emitGameState();
 
         const opponent = this.gs.turn;
-        const hasLegalMoves = this.validator.hasAnyMoves(this.gs, opponent);
+        const hasLegalMoves = this.validator.hasAnyLegalMove(this.gs, opponent);
         if (!hasLegalMoves) {
             const inCheck = this.validator.isInCheck(this.gs, opponent);
             this.over = true;
@@ -107,8 +108,8 @@ class Game {
 
         return {ok:true};
     }
-    getGameState() {
-        return {
+    getGameState() { 
+        return { //this ends up going to chessclient.js game.handleStateUpdate
             board: this.gs.board,
             turn: this.gs.turn,
         }
@@ -129,37 +130,37 @@ class socketManager {
         this._listeners.push({socket,event,handler});
     }
     initListeners() {
-        const [p1, p2] = this.game.players;
+        const p1 = this.game.players[0].socket;
+        const p2 = this.game.players[1].socket;
 
         const onmove = (pid) => (move, callback) => {
-            console.log("Received move from player ", pid, ": ", move);
             const result = this.game.applyMove(pid, move);
             callback(result);
         }
-        this.addListener(p1.socket, "player-move", onmove(p1.id));
-        this.addListener(p2.socket, "player-move", onmove(p2.id));
+        this.addListener(p1, "player-move", onmove(p1.id));
+        this.addListener(p2, "player-move", onmove(p2.id));
 
         const onDisconnect = (pid) => () => {
             if (this.game.over) return;
             this.game.over = true;
             this.emitGameOver({
-                result: "abandon",
+                result: "abandonment",
                 winner: this.game.colorOf(pid) === "w" ? "b" : "w"
             });
         }
-        this.addListener(p1.socket, "disconnect", onDisconnect(p1.id));
-        this.addListener(p2.socket, "disconnect", onDisconnect(p2.id));
+        this.addListener(p1, "disconnect", onDisconnect(p1.id));
+        this.addListener(p2, "disconnect", onDisconnect(p2.id));
 
         const onResign = (pid) => () => {
             if (this.game.over) return;
             this.game.over = true;
             this.emitGameOver({
-                result: "resign",
+                result: "resignation",
                 winner: this.game.colorOf(pid) === "w" ? "b" : "w"
             });
         }
-        this.addListener(p1.socket, "resign", onResign(p1.id));
-        this.addListener(p2.socket, "resign", onResign(p2.id));
+        this.addListener(p1, "resign", onResign(p1.id));
+        this.addListener(p2, "resign", onResign(p2.id));
     }
     removeListeners() {
         for (const {socket,event,handler} of this._listeners) {
@@ -176,15 +177,20 @@ class socketManager {
     }
     emitGameStart() {
         const [p1, p2] = this.game.players;
+        const state = this.game.getGameState()
+
         p1.socket.emit("game-start", {
             team: "w",
             me: { username: p1.username },
             opponent: { username: p2.username },
+            ...state
+
         });
         p2.socket.emit("game-start", {
             team: "b",
             me: { username: p2.username },
             opponent: { username: p1.username },
+            ...state
         });
     }
     emitGameOver(result) {
@@ -198,15 +204,4 @@ class socketManager {
     }
 }
 
-function initBoard() {
-    const gs = new GameState();
-    const backRank = ["r", "n", "b", "q", "k", "b", "n", "r"];
 
-    for (let x = 0; x < 8; x++) {
-        gs.board[x] = { color: "b", piece: backRank[x] };  
-        gs.board[8 + x] = { color: "b", piece: "p" };
-        gs.board[48 + x] = { color: "w", piece: "p" };
-        gs.board[56 + x] = { color: "w", piece: backRank[x] };  
-    }
-    return gs;
-}

@@ -166,7 +166,7 @@ body {
 
 .setting {
     width: 100%;
-    border-bottom: 2px solid #555;
+    border-bottom: 2px solid #444;
 
     display: grid;
     grid-template-columns: 1fr 3fr; /* left text | right settings */
@@ -263,9 +263,9 @@ p {
     background-color: #2fce72;
 }
 #login {
-    background: #2c2f36;
+    background: #262626;
     color: #e4e6eb;
-    border: 1px solid #3a3f47;
+    border: 1px solid #3a3a3a;
 }
 #login:hover {
     background: #3a3f47;
@@ -326,7 +326,193 @@ p {
     min-height: 50px;
 }
 #in-game {
-    background-color: white;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* Player rows */
+.player-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    flex-shrink: 0;
+}
+
+#opponent-row {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+#self-row {
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+/* Avatar */
+.player-avatar {
+    position: relative;
+    width: 38px;
+    height: 38px;
+    flex-shrink: 0;
+}
+
+.player-avatar img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    display: none;
+}
+
+.player-avatar img.loaded {
+    display: block;
+}
+
+.avatar-placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.06);
+    font-size: 16px;
+    color: #aaa;
+}
+
+/* Player info */
+.player-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.player-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #eee;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.player-elo {
+    font-size: 11px;
+    color: #666;
+}
+
+.player-elo span {
+    color: #999;
+    font-weight: 500;
+}
+
+/* Clock */
+.player-clock {
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    color: #aaa;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    padding: 4px 8px;
+    flex-shrink: 0;
+}
+
+.player-clock.active {
+    color: #5aaaff;
+    border-color: rgba(90, 170, 255, 0.25);
+    background: rgba(90, 170, 255, 0.08);
+}
+
+/* Move history */
+#move-history {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px 14px;
+    min-height: 0;
+}
+
+#move-history-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #555;
+    margin-bottom: 8px;
+}
+
+#move-list {
+    display: grid;
+    grid-template-columns: 20px 1fr 1fr;
+    gap: 3px 8px;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    color: #bbb;
+}
+
+#move-list .move-num {
+    color: #555;
+}
+
+/* Action buttons */
+#game-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    flex-shrink: 0;
+}
+#game-actions-row {
+    display: flex;
+    gap: 6px;
+}
+.action-btn {
+    flex: 1;
+    padding: 7px 0;
+    font-size: 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    background: transparent;
+    color: #bbb;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.action-btn:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+.action-btn.danger {
+    color: #e06060;
+    border-color: rgba(220, 80, 80, 0.25);
+}
+
+.action-btn.danger:hover {
+    background: rgba(220, 80, 80, 0.08);
+}
+
+.action-gameover {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 8px 0 4px;
+}
+#action-confirm-label {
+    font-size: 11px;
+    color: #666;
+    text-align: center;
+}
+#game-winner {
+    font-size: 15px;
+    font-weight: 600;
+    color: #eee;
+}
+
+#game-win-reason-wrap {
+    font-size: 13px;
+    color: #666;
 }
 
 

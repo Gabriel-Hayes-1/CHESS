@@ -32,6 +32,18 @@ class GameState {
         };
         return newGs;
     }
+    static defaultBoard() {
+        const gs = new GameState();
+        const backRank = ["r", "n", "b", "q", "k", "b", "n", "r"];
+
+        for (let x = 0; x < 8; x++) {
+            gs.board[x] = { color: "b", piece: backRank[x] };
+            gs.board[8 + x] = { color: "b", piece: "p" };
+            gs.board[48 + x] = { color: "w", piece: "p" };
+            gs.board[56 + x] = { color: "w", piece: backRank[x] };
+        }
+        return gs;
+    }
     //primary method
     applyMove(move) {
         const next = GameState.fromGs(this);

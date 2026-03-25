@@ -120,50 +120,52 @@ function feedback(feedbackElem,warnLevel,str) {
     feedbackElem.appendChild(textSpan);
 }
 
-signupBtn.addEventListener("click",async ()=>{
-    const username = userNameInput.value.trim();
-    const password = passwordInput.value;
-    const passwordConfirm = passwordConfirmInput.value;
-    
-    if (!username || !password) {
-        feedback(loginFeedback,"warning","Username and password are required");
-    } else if (password !== passwordConfirm) {
-        feedback(loginFeedback,"warning","Passwords do not match");
-    } else {
-        const result = await signup(username, password);
+export function initAccountBtns(signup, login, logout) {
+    signupBtn.addEventListener("click", async () => {
+        const username = userNameInput.value.trim();
+        const password = passwordInput.value;
+        const passwordConfirm = passwordConfirmInput.value;
+
+        if (!username || !password) {
+            feedback(loginFeedback, "warning", "Username and password are required");
+        } else if (password !== passwordConfirm) {
+            feedback(loginFeedback, "warning", "Passwords do not match");
+        } else {
+            const result = await signup(username, password);
+            if (result.success) {
+                uiLoggedIn(username);
+
+            } else {
+                feedback(loginFeedback, "warning", result.message || "Signup failed");
+            }
+        }
+    });
+    loginBtn.addEventListener("click", async () => {
+        const username = userNameInput.value.trim();
+        const password = passwordInput.value;
+
+        if (!username || !password) {
+            feedback(loginFeedback, "warning", "Username and password are required");
+            return
+        }
+        const result = await login(username, password);
         if (result.success) {
             uiLoggedIn(username);
-            
         } else {
-            feedback(loginFeedback,"warning",result.message || "Signup failed");
+            feedback(loginFeedback, "warning", result.message)
         }
-    }
-});
+    })
+    logoutBtn.addEventListener("click", async () => {
+        const result = await logout();
+        if (result.success) {
+            uiLoggedOut();
+        } else {
+            feedback(logoutFeedback, "warning", result.message || "Logout failed");
+        }
+    })
+}
 
-loginBtn.addEventListener("click", async ()=>{
-    const username = userNameInput.value.trim();
-    const password = passwordInput.value;
-    
-    if (!username || !password) {
-        feedback(loginFeedback,"warning","Username and password are required");
-        return
-    }
-    const result = await login(username,password); 
-    if (result.success) {
-        uiLoggedIn(username);
-    } else {
-        feedback(loginFeedback,"warning",result.message)
-    }
-})
 
-logoutBtn.addEventListener("click", async ()=>{
-    const result = await logout();
-    if (result.success) {
-        uiLoggedOut();
-    } else {
-        feedback(logoutFeedback,"warning",result.message || "Logout failed");
-    }
-})
 
 const requestGameBtn = document.getElementById("find-game");
 const cancelGameBtn = document.getElementById("cancel-find-game");
@@ -229,6 +231,84 @@ export function changeCardPage(pageId) {
             page.classList.remove("active");
         }
     })
+}
+
+function hide(elem) {elem.classList.add("hidden")}
+function show(elem) {elem.classList.remove("hidden")}
+
+const resign = document.querySelector('#resign');
+const draw = document.querySelector('#offer-draw');
+const actionConfirmLabel = document.querySelector('#action-confirm-label')
+const actionConfirm = document.querySelector('#action-confirm')
+const actionCancel = document.querySelector('#action-cancel')
+function setConfirm(confirmState) {
+    if (confirmState) {
+        hide(resign)
+        hide(draw)
+        show(actionConfirm)
+        show(actionCancel)
+    } else {
+        show(resign)
+        show(draw)
+        hide(actionConfirm)
+        hide(actionCancel)
+    }
+}
+export function initDrawResign(drawFn, resignFn) {
+    let confirmAction = null
+    resign.addEventListener('click', (e) => {
+        setConfirm(true)
+        confirmAction = resignFn
+        actionConfirm.textContent = "Resign"
+        actionConfirm.classList.add("danger")
+        actionConfirmLabel.textContent = "Resign from this game?"
+        show(actionConfirmLabel)
+    })
+    draw.addEventListener('click', (e) => {
+        setConfirm(true);
+        confirmAction = drawFn
+        actionConfirm.textContent = "Offer Draw"
+        actionConfirm.classList.remove("danger")
+        actionConfirmLabel.textContent = "Offer draw?"
+        show(actionConfirmLabel)
+    })
+    actionCancel.addEventListener('click', () => {
+        setConfirm(false)
+        hide(actionConfirmLabel)
+    })
+    actionConfirm.addEventListener('click', () => {
+        setConfirm(false)
+        hide(actionConfirmLabel)
+        confirmAction();
+    })
+}
+
+const gameOver = document.querySelector('#gameover')
+const winnerDisplay = document.querySelector('#game-winner')
+const reasonDisplay = document.querySelector('#game-win-reason')
+export function win(result, reason) {
+    [resign,draw,actionCancel,actionConfirm].forEach((e)=>hide(e))
+    show(gameOver)
+
+    reasonDisplay.innerText = reason
+    
+    if (result==='b') {
+        winnerDisplay.innerText = "Black wins" 
+    } else if (result==='w') {
+        winnerDisplay.innerText = "White wins"
+    } else if (result==='draw') {
+        winnerDisplay.innerText = "Draw"
+    } else {
+        console.error("Unknown game outcome: "+result)
+    }
+}
+
+const opUser = document.querySelector('#opponent-username');
+const selfUser = document.querySelector('#self-username')
+export function gameStartUI(data) {
+
+    opUser.textContent = data.opponent.username
+    selfUser.textContent = data.me.username
 }
 
 

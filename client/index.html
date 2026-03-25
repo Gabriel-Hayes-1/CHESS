@@ -32,7 +32,54 @@
                             <button id="cancel-find-game" class="page-btn hidden">Cancel</button>
                             <div id="matchmaking-feedback"></div>
                         </div>
-                        <div id="in-game" class="card-page"></div>
+                        <div id="in-game" class="card-page">
+                        
+                            <div class="player-row" id="opponent-row">
+                                <div class="player-avatar">
+                                    <img id="opponent-avatar" src="" alt="Opponent" />
+                                    <span class="avatar-placeholder" id="opponent-avatar-placeholder">?</span>
+                                </div>
+                                <div class="player-info">
+                                    <span class="player-name" id="opponent-username">Opponent</span>
+                                    <span class="player-elo">ELO <span id="opponent-elo">—</span></span>
+                                </div>
+                                <div class="player-clock" id="opponent-clock">10:00</div>
+                            </div>
+                        
+                            <div id="move-history">
+                                <div id="move-history-label">Moves</div>
+                                <div id="move-list">
+                                    <!-- JS populates: <span class="move-num">1</span><span class="move">e4</span><span class="move">e5</span> -->
+                                </div>
+                            </div>
+                        
+                            <div id="game-actions">
+                                <div class="hidden" id="action-confirm-label"></div>
+                                <div id="game-actions-row">
+                                    <button class="action-btn" id="offer-draw">Draw</button>
+                                    <button class="action-btn danger" id="resign">Resign</button>
+                                    <button class="action-btn hidden" id="action-confirm">Confirm</button>
+                                    <button class="action-btn hidden" id="action-cancel">Cancel</button>
+                                </div>
+                                <div class="action-gameover hidden" id="gameover">
+                                    <span id="game-winner">-</span>
+                                    <span id="game-win-reason-wrap">by <span id="game-win-reason">-</span></span>
+                                </div>
+                            </div>
+                        
+                            <div class="player-row" id="self-row">
+                                <div class="player-avatar">
+                                    <img id="self-avatar" src="" alt="You" />
+                                    <span class="avatar-placeholder" id="self-avatar-placeholder">♟</span>
+                                </div>
+                                <div class="player-info">
+                                    <span class="player-name" id="self-username">You</span>
+                                    <span class="player-elo">ELO <span id="self-elo">—</span></span>
+                                </div>
+                                <div class="player-clock" id="self-clock">10:00</div>
+                            </div>
+                        
+                        </div>
                     </div>
                 </div>
             </div>
