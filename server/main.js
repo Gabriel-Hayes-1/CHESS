@@ -7,9 +7,10 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import cookieParser from 'cookie-parser';
 import * as cookie from 'cookie';
-import * as game from './game.js';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
+import GameManager from './game.js';
+import db from './db.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ quiet: true })
@@ -19,15 +20,11 @@ const server = http.createServer(app);
 const io = new Server(server);
 
 const JWT_SECRET = process.env.JWT_SECRET
-if (!JWT_SECRET) {
-    throw new Error('JWT_SECRET environment variable is not defined');
-}
-console.log("JWT_SECRET is configured")
 
-const database = {}; //EXTREMELY TEMPORARY. REPLACE WITH REAL DATABASE LATER
+
 const connectedPlayers = new Map();
 const matchmakingQueue = new Set();
-const gameManager = new game.GameManager(io);
+const gameManager = new GameManager(io);
 
 const PORT = process.argv[2] || 3000; // Use command-line argument or default to 3000
 
@@ -58,8 +55,9 @@ function authenticate(req,res,next) {
         if (err) {
             return res.status(403).json({message: 'Invalid token' });
         }
-        const user = database[decoded.username];
 
+        //consider removing DB trip in the future 
+        const user = db.prepare('SELECT * FROM users WHERE id = ?').get(decoded.id);
         if (!user) {
             res.clearCookie('sessionToken',{
                 httpOnly:true,
@@ -68,7 +66,7 @@ function authenticate(req,res,next) {
             return res.status(401).json({message: 'User no longer exsists' });
         }
 
-        req.user = decoded; // Attach decoded user info to request
+        req.user = decoded; //attach decoded user info to request
         next();
     });
 }
@@ -85,7 +83,7 @@ app.post('/api/signup', async (req, res)=>{
             return res.status(400).json({message: 'Username and password are required' });
         }
 
-        const exsistingUser = database[username]; //again use real db for this
+        const exsistingUser = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
 
         if (exsistingUser) {
             return res.status(409).json({message: 'Username already exists' });
@@ -99,8 +97,8 @@ app.post('/api/signup', async (req, res)=>{
             passwordHash: hash,
         }
 
-        //store in db (again replace with real db)
-        database[username] = newUser;
+        db.prepare('INSERT INTO users (id, username, passwordHash) VALUES (?, ?, ?)')
+            .run(newUser.id, newUser.username, newUser.passwordHash);
 
         const token = jwt.sign({ id: newUser.id, username: newUser.username }, JWT_SECRET, { expiresIn: '1d' });
 
@@ -127,7 +125,7 @@ app.post('/api/login', async (req, res)=>{
             return res.status(400).json({message: 'Username and password are required' });
         }
 
-        const exsistingUser = database[username]; //again use real db for this
+        const exsistingUser = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
 
         if (!exsistingUser) {
             return res.status(400).json({message: 'Invalid username or password'});
@@ -173,7 +171,7 @@ app.get("/api/me", (req, res) => {
             return res.status(200).json({ user: null });
         }
 
-        const user = database[decoded.username];
+        const user = db.prepare('SELECT * FROM users WHERE id = ?').get(decoded.id);
 
         if (!user) {
             res.clearCookie('sessionToken', {

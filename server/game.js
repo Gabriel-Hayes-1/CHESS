@@ -1,7 +1,7 @@
 import { GameState,MoveValidator } from "../shared/chess.js";
 
 
-export class GameManager {
+export default class GameManager {
     constructor(io) {
         this.io = io;
         this.games = new Map(); //gid -> Game
