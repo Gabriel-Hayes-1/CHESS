@@ -1,7 +1,10 @@
-const sidebar = document.getElementById('sidebar');
-const container = document.getElementById('page-content-container');
-const boardColorSelect = document.getElementById('theme-select');
-const sidebarToggle = document.getElementById('sidebar-toggle'); 
+function qs(selector) {
+    return document.querySelector(selector);
+}
+const sidebar = qs('#sidebar');
+const container = qs('#page-content-container');
+const boardColorSelect = qs('#theme-select');
+const sidebarToggle = qs('#sidebar-toggle'); 
 
 import { updateSetting, settings, options } from "./settings.js";
 
@@ -38,7 +41,7 @@ function toTitleCase(str) {
   });
 }
 
-const colorDropdown = document.getElementById("theme-dropdown");
+const colorDropdown = qs("#theme-dropdown");
 boardColorSelect.addEventListener("click",()=>{
     colorDropdown.classList.toggle("hidden");
     colorDropdown.innerHTML = '';
@@ -79,17 +82,17 @@ function loadSettingsUi() {
 }
 loadSettingsUi()
 
-const signupBtn = document.getElementById("signup");
-const loginBtn = document.getElementById("login");
-const logoutBtn = document.getElementById("logout");
-const userNameInput = document.getElementById("usernameInput");
-const passwordInput = document.getElementById("passwordInput");
-const passwordConfirmInput = document.getElementById("passwordInputConfirm");
-const loginFeedback = document.getElementById("login-feedback");
-const logoutFeedback = document.getElementById("logout-feedback");
-const logInSetting = document.getElementById("login-setting");
-const logOutSetting = document.getElementById("logout-setting");
-const loginStatus = document.getElementById("loginStatus");
+const signupBtn = qs("#signup");
+const loginBtn = qs("#login");
+const logoutBtn = qs("#logout");
+const userNameInput = qs("#usernameInput");
+const passwordInput = qs("#passwordInput");
+const passwordConfirmInput = qs("#passwordInputConfirm");
+const loginFeedback = qs("#login-feedback");
+const logoutFeedback = qs("#logout-feedback");
+const logInSetting = qs("#login-setting");
+const logOutSetting = qs("#logout-setting");
+const loginStatus = qs("#loginStatus");
 
 export function uiLoggedIn(username) {
     logInSetting.classList.add("hidden");
@@ -236,11 +239,11 @@ export function changeCardPage(pageId) {
 function hide(elem) {elem.classList.add("hidden")}
 function show(elem) {elem.classList.remove("hidden")}
 
-const resign = document.querySelector('#resign');
-const draw = document.querySelector('#offer-draw');
-const actionConfirmLabel = document.querySelector('#action-confirm-label')
-const actionConfirm = document.querySelector('#action-confirm')
-const actionCancel = document.querySelector('#action-cancel')
+const resign = qs('#resign');
+const draw = qs('#offer-draw');
+const actionConfirmLabel = qs('#action-confirm-label')
+const actionConfirm = qs('#action-confirm')
+const actionCancel = qs('#action-cancel')
 function setConfirm(confirmState) {
     if (confirmState) {
         hide(resign)
@@ -283,9 +286,9 @@ export function initDrawResign(drawFn, resignFn) {
     })
 }
 
-const gameOver = document.querySelector('#gameover')
-const winnerDisplay = document.querySelector('#game-winner')
-const reasonDisplay = document.querySelector('#game-win-reason')
+const gameOver = qs('#gameover')
+const winnerDisplay = qs('#game-winner')
+const reasonDisplay = qs('#game-win-reason')
 export function win(result, reason) {
     [resign,draw,actionCancel,actionConfirm].forEach((e)=>hide(e))
     show(gameOver)
@@ -296,44 +299,120 @@ export function win(result, reason) {
         winnerDisplay.innerText = "Black wins" 
     } else if (result==='w') {
         winnerDisplay.innerText = "White wins"
-    } else if (result==='draw') {
+    } else if (result==="draw") {
         winnerDisplay.innerText = "Draw"
     } else {
         console.error("Unknown game outcome: "+result)
     }
 }
 
-const opUser = document.querySelector('#opponent-username');
-const selfUser = document.querySelector('#self-username')
+const opUser = qs('#opponent-username');
+const selfUser = qs('#self-username')
 export function gameStartUI(data) {
 
     opUser.textContent = data.opponent.username
     selfUser.textContent = data.me.username
 }
 
+const promotions = {
+    q: qs('#promotion-queen'),
+    r: qs('#promotion-rook'),
+    b: qs('#promotion-bishop'),
+    n: qs('#promotion-knight')
+}
+const promotionOverlay = qs('#promotion-select')
+export async function loadPromotionImages(color) {
+    const loadPromises = Object.entries(promotions).map(([piece, button]) => {
+        return new Promise(resolve => {
+            button.onload = resolve;
+            button.src = "/assets/pieces/" + color + piece + ".svg";
+        });
+    });
+    await Promise.all(loadPromises);
+}
+export function promptPromotion(color, coords, tileSize) {
+    return new Promise(async resolve => {
+        if (Object.values(promotions).some(e => e.src === window.location.href)) {
+            console.log("images not loaded, loading")
+            await loadPromotionImages(color)
+        }
+
+        const board = document.querySelector("#board");
+        const boardW = board.offsetWidth;
+        const boardH = board.offsetHeight;
+        const overlayW = promotionOverlay.offsetWidth;
+        const overlayH = promotionOverlay.offsetHeight;
+
+        let left = coords[0] - overlayW / 2;
+        let top = coords[1] + tileSize[1]/2; //coords is centered so align to top again
+
+        left = Math.max(0, Math.min(left, boardW - overlayW));
+        top = Math.max(0, Math.min(top, boardH - overlayH));
+
+        promotionOverlay.style.left = `${left}px`;
+        promotionOverlay.style.top = `${top}px`;
+
+        promotionOverlay.classList.remove('transparent');
+
+        const ac = new AbortController();
+        for (const [piece, button] of Object.entries(promotions)) {
+            button.addEventListener("mousedown", (e) => {
+                ac.abort();
+                promotionOverlay.classList.add('transparent');
+                resolve(piece);
+            }, { signal: ac.signal });
+        }
+    });
+}
+
+function formatTime(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
+let clockTicker = null;
+let lastTickTime = null;
+const selfClock = document.querySelector('#self-clock');
+const opponentClock = document.querySelector('#opponent-clock');
+export function setTimer(myColor, team, times) {
+    let bClock,wClock
+    if (myColor==="w") {
+        wClock = selfClock
+        bClock = opponentClock
+    } else {
+        bClock = selfClock
+        wClock = opponentClock
+    }
+    wClock.textContent = formatTime(times["w"]);
+    bClock.textContent = formatTime(times["b"]);
+    if (team==="b") {
+        bClock.classList.add("active");
+        wClock.classList.remove("active");
+    } else {
+        wClock.classList.add("active");
+        bClock.classList.remove("active");
+    }
+    let remaining = {w: times["w"], b: times["b"]}
+    lastTickTime = performance.now();
+    clearInterval(clockTicker);
+    clockTicker = setInterval(()=>{
+        const now = performance.now();
+        const elapsed = (now - lastTickTime)/1000;
+        lastTickTime = now;
+        remaining[team] -= elapsed;
+        
+        if (team === "w") {
+            wClock.textContent = formatTime(Math.max(0,remaining["w"]));
+        } else {
+            bClock.textContent = formatTime(Math.max(0, remaining["b"]));
+        }
+    },100) 
+}
+
 
 // Default page
 switchPage("play");
 
-/*
-let listenerActive = false;
-document.addEventListener("keydown",(e)=>{
-    if (e.key === "F3") {
-        e.preventDefault();
-        const debugKey = "D";
-        const onDebugKey = (event)=>{
-            if (event.key.toUpperCase() === debugKey) {
-                __CHESS_GAME.debug = !__CHESS_GAME.debug;
-                console.log("Debug mode: ", __CHESS_GAME.debug);
-            }
-            document.removeEventListener("keydown", onDebugKey);
-            listenerActive = false;
-        }
-        if (!listenerActive) {
-            document.addEventListener("keydown", onDebugKey);
-            listenerActive = true;
-        }
-    }
-})
-*/
+
 

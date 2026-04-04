@@ -9,15 +9,20 @@ import cookieParser from 'cookie-parser';
 import * as cookie from 'cookie';
 import * as game from './game.js';
 import { fileURLToPath } from 'url';
+import dotenv from 'dotenv';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
+dotenv.config({ quiet: true })
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-const JWT_SECRET = '444796dbd8f84d921dbd9e55dbfff3f14086f7e6249287ffb12e1e2b2443eaeb' //maybe define in .env later
+const JWT_SECRET = process.env.JWT_SECRET
+if (!JWT_SECRET) {
+    throw new Error('JWT_SECRET environment variable is not defined');
+}
+console.log("JWT_SECRET is configured")
 
 const database = {}; //EXTREMELY TEMPORARY. REPLACE WITH REAL DATABASE LATER
 const connectedPlayers = new Map();
@@ -204,7 +209,6 @@ io.use((socket,next)=>{
 io.on('connection', (socket) => {
     const socketId = socket.id;
     const accountId = socket.userId?.id || null;
-    console.log("Logged in with accountId "+ accountId)
     let username;
     if (accountId) {
         username = socket.userId.username;

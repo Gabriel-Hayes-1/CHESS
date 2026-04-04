@@ -43,14 +43,6 @@ export class GameManager {
         }
         return -1;
     }
-
-    handleMove(gid,pid,move) { //entry point for handling moves
-        const game = this.games.get(gid);
-        if (!game) return {ok:false, error:"game not found"};
-        const playerIndex = this.playerIndex(gid, pid);
-        if (playerIndex === -1) return {ok:false, error:"player not in game"};
-        return game.applyMove(pid, move);
-    }
    
 }
 
@@ -64,33 +56,70 @@ class Game {
         this.players = [p1,p2];
         this.over = false;
 
+        this.clocks = {w:600,b:600}; // can change to game values (20 min, 5 min etc)
+        this.increment = 0 //for things like 2+1: adds this many seconds when a turn is complete
+        this.activeClock = null;
+        this.lastTickTime = null
+
         this.sockets = new socketManager(this, io);
         this.sockets.addSocketsToRoom();
         this.sockets.emitGameStart();
         this.sockets.emitGameState();
         this.sockets.initListeners();
+
+        this.startClock("w")
     }
 
     colorOf(pid) {
         return this.players[0].socket.id === pid ? "w" : "b";
     }
 
+    startClock(color) {
+        this.lastTickTime = performance.now();
+        this.activeClock = setInterval(()=>{
+            const now = performance.now();
+            const elapsed = (now - this.lastTickTime)/1000;
+            this.lastTickTime = now
+
+            this.clocks[color] -= elapsed;
+            if (this.clocks[color] <= 0) {
+                this.clocks[color] = 0;
+                this.stopClock();
+                this.over = true;
+                this.sockets.emitGameOver({
+                    result: "timeout",
+                    winner: color === "w" ? "b" : "w"
+                })
+            }
+        },100)
+    }
+
+    stopClock() {
+        clearInterval(this.activeClock);
+        this.activeClock = null
+    }
+
     applyMove(pid,move) {
+        const movingColor = this.gs.turn;
         if (this.over) return {ok:false, error:"game over"};
-        if (this.colorOf(pid) !== this.gs.turn) return {ok:false, error:"not your turn"};
+        if (this.colorOf(pid) !== movingColor) return {ok:false, error:"not your turn"};
 
         const piece = this.gs.getTile(move.from);
-        if (!piece || piece.color !== this.gs.turn) return {ok:false, error:"invalid piece"};
+        if (!piece || piece.color !== movingColor) return {ok:false, error:"invalid piece"};
 
         const legal = this.validator.getValidMoves(this.gs, move.from);
         const isLegal = legal.final.some(
-            m => m.move === move.to && !!m.castle === !!move.castle && !!m.enPassant === !!move.enPassant
+            m => m.move === move.to && !!m.castle === !!move.castle && 
+            !!m.enPassant === !!move.enPassant && !!move.promotion === !!m.promotion
         )
         if (!isLegal) return { ok: false, error: "illegal_move" };
 
+        
         const {state:nextGs, move:outgoingMove} = this.gs.applyMove(move);
         this.gs = nextGs;
 
+        this.stopClock();
+        this.clocks[movingColor] += this.increment;
 
         this.sockets.emitMove(outgoingMove);
         this.sockets.emitGameState();
@@ -102,16 +131,20 @@ class Game {
             this.over = true;
             this.sockets.emitGameOver({
                 result: inCheck ? "checkmate" : "stalemate",
-                winner: inCheck ? this.colorOf(pid) : null
+                winner: inCheck ? this.colorOf(pid) : "draw"
             });
+        }
+
+        if (!this.over) {
+            this.startClock(this.gs.turn);
         }
 
         return {ok:true};
     }
-    getGameState() { 
-        return { //this ends up going to chessclient.js game.handleStateUpdate
-            board: this.gs.board,
-            turn: this.gs.turn,
+    getGameState() { //this ends up going to chessclient.js game.handleStateUpdate
+        return {
+            ...this.gs,
+            clocks:this.clocks
         }
     }
 }
@@ -134,8 +167,18 @@ class socketManager {
         const p2 = this.game.players[1].socket;
 
         const onmove = (pid) => (move, callback) => {
-            const result = this.game.applyMove(pid, move);
-            callback(result);
+            if (typeof callback !== "function") return; //ignore if no callback provided
+            if (!move || typeof move != "object") {
+                callback({ok:false, error:"invalid move format"});
+                return;
+            }
+            try {
+                const result = this.game.applyMove(pid, move);
+                callback(result);
+            } catch (e) {
+                console.error("Error applying move:", e);
+                callback({ok:false, error:"internal server error"});
+            }
         }
         this.addListener(p1, "player-move", onmove(p1.id));
         this.addListener(p2, "player-move", onmove(p2.id));

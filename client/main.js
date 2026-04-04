@@ -54,6 +54,7 @@ class App {
         this.game.loadFromData(data);
 
         this._unsubListeners.push(this.networker.on('game-state',(data)=>this.game.handleStateUpdate(data)))
+        this._unsubListeners.push(this.networker.on('player-move',(data=>this.game.handlePlayerMove(data))))
         this._unsubListeners.push(this.networker.on('game-over',(data)=>{
             console.log(data)
             win(data.winner,data.result)
@@ -66,3 +67,4 @@ class App {
     }
 }
 const app = new App(gameCanvas)
+window.app = app // remove in prod, for debugging

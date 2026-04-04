@@ -13,6 +13,8 @@ class GameState {
             b: []
         };
     }
+    static promotable = new Set(["q", "r", "b", "n"]);
+
     //factories
     static fromBoard(board) {
         const gs = new GameState();
@@ -53,9 +55,14 @@ class GameState {
         if (captured) {
             next.capturedPieces[captured.color].push(captured.piece);
         }
-        next.board[move.to] = move.promotion ?
-            { color: piece.color, piece: move.promotion }
-            : piece;
+        if (move.promotion && move.promotion !== true) {
+            if (!GameState.promotable.has(move.promotion)) {
+                move.promotion = "n"; //default is knight
+            }
+            next.board[move.to] = { color: piece.color, piece: move.promotion }
+        } else {
+            next.board[move.to] = piece
+        }
         next.board[move.from] = null;
         //king move check
         if (piece.piece === "k") {
@@ -100,7 +107,7 @@ class GameState {
             }
         }
         if (move.enPassant) {
-            const capturedIndex = move.enPassant ? move.to + (color === "w" ? -8 : 8) : null;
+            const capturedIndex = move.enPassant ? move.to + (piece.color === "w" ? 8 : -8) : null;
             console.log(capturedIndex)
             if (capturedIndex !== null) {
                 const capturedPawn = next.board[capturedIndex];
@@ -109,10 +116,7 @@ class GameState {
                     next.board[capturedIndex] = null;
                 }
             }
-
         }
-
-
 
 
         next.moveHistory.push(move);
@@ -134,6 +138,11 @@ class GameState {
             state: next,
             move: anim
         };
+    }
+    setTile(i, piece) {
+        let next = GameState.fromGs(this);
+        next.board[i] = piece;
+        return next;
     }
     //queries
     getTile(i) {
@@ -244,7 +253,7 @@ class MoveValidator {
         return this.isIndexAttacked(GameState, kingIndex, opponentColor);
     }
     getValidMoves(GameState, index) {
-        const board = GameState.board; //gamestate is a full object of gamestate
+        const board = GameState.board; //gamestate is a full instance of GameState
         const tile = board[index];
         if (!tile) {
             console.error('No piece at index', index);
@@ -311,6 +320,7 @@ class MoveValidator {
         } else if (rules.type === "pawn") {
             //holy crap here we go
             const startingRow = color === "w" ? 6 : 1;
+            const finalRow = color === "w" ? 0 : 7
             const direction = color === "w" ? -1 : 1;
 
             //forward move
@@ -318,8 +328,13 @@ class MoveValidator {
             const newY1 = y + direction;
             const newIndex1 = xyToI(newX1, newY1);
             if (inBoundsxy(newX1, newY1) && !board[newIndex1]) {
-                moves.total.push({ move: newIndex1 });
-                moves.noCaptures.push({ move: newIndex1 });
+                if (newY1 == finalRow) {
+                    moves.total.push({ move: newIndex1, promotion:true});
+                    moves.noCaptures.push({ move: newIndex1, promotion:true});
+                } else {
+                    moves.total.push({ move: newIndex1 });
+                    moves.noCaptures.push({ move: newIndex1 });
+                }
             }
 
             //double move
@@ -342,8 +357,13 @@ class MoveValidator {
                 if (inBoundsxy(newX, newY)) {
                     const targetTile = board[newIndex];
                     if (targetTile && targetTile.color !== color) { //if opposite team
-                        moves.total.push({ move: newIndex });
-                        moves.capture.push({ move: newIndex });
+                        if (newY1 == finalRow) {
+                            moves.total.push({ move: newIndex, promotion: true });
+                            moves.noCaptures.push({ move: newIndex, promotion: true });
+                        } else {
+                            moves.total.push({ move: newIndex });
+                            moves.noCaptures.push({ move: newIndex });
+                        }
                     } else if (newIndex === enpassantSquare && board[xyToI(newX, y)]?.color === opColor && board[xyToI(newX, y)]?.piece === "p") {
                         moves.total.push({ move: newIndex, enPassant: true });
                     }
@@ -432,8 +452,6 @@ class MoveValidator {
     }
 }
 
-
-
 function inBoundsxy(x, y) {
     return x >= 0 && x < 8 && y >= 0 && y < 8;
 }
@@ -443,6 +461,5 @@ function xyToI(x, y) {
 function iToXY(i) {
     return [i % 8, Math.floor(i / 8)];
 }
-
 
 export {GameState, MoveValidator, xyToI, iToXY};
