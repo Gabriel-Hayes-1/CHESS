@@ -1,9 +1,9 @@
-import { Networker, Game, loadImages } from "./chessclient.js";
-import { signup, login, logout, checkLoginStatus } from "./auth.js";
-import { 
-    uiLoggedIn, uiLoggedOut, initMatchmakingUI, changeCardPage, 
+import {
+    uiLoggedIn, uiLoggedOut, initMatchmakingUI, changeCardPage,
     initAccountBtns, initDrawResign, win, gameStartUI
 } from "./ui.js";
+import { Networker, Game, loadImages } from "./chessclient.js";
+import { signup, login, logout, checkLoginStatus } from "./auth.js";
 import { GameState } from "../shared/chess.js";
 
 const gameCanvas = document.getElementById('board');

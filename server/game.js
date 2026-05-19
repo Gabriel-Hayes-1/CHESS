@@ -53,8 +53,11 @@ class Game {
         this.io = io;
         this.gs = GameState.defaultBoard();
         this.validator = validator;
-        this.players = [p1,p2];
         this.over = false;
+        
+        // {socket, username, game, accountId}
+        this.players = [p1, p2];
+        
 
         this.clocks = {w:600,b:600}; // can change to game values (20 min, 5 min etc)
         this.increment = 0 //for things like 2+1: adds this many seconds when a turn is complete
@@ -84,19 +87,14 @@ class Game {
             this.clocks[color] -= elapsed;
             if (this.clocks[color] <= 0) {
                 this.clocks[color] = 0;
-                this.stopClock();
-                this.over = true;
-                this.sockets.emitGameOver({
-                    result: "timeout",
-                    winner: color === "w" ? "b" : "w"
-                })
+                this.end("timeout", color === "w" ? "b" : "w")
             }
         },100)
     }
 
     stopClock() {
         clearInterval(this.activeClock);
-        this.activeClock = null
+        this.activeClock = null;
     }
 
     applyMove(pid,move) {
@@ -128,11 +126,10 @@ class Game {
         const hasLegalMoves = this.validator.hasAnyLegalMove(this.gs, opponent);
         if (!hasLegalMoves) {
             const inCheck = this.validator.isInCheck(this.gs, opponent);
-            this.over = true;
-            this.sockets.emitGameOver({
-                result: inCheck ? "checkmate" : "stalemate",
-                winner: inCheck ? this.colorOf(pid) : "draw"
-            });
+            this.end(
+                inCheck ? "checkmate" : "stalemate",
+                inCheck ? this.colorOf(pid) : "draw"
+            )
         }
 
         if (!this.over) {
@@ -140,6 +137,11 @@ class Game {
         }
 
         return {ok:true};
+    }
+    end(result,winner) {
+        this.over = true;
+        this.stopClock();
+        this.sockets.emitGameOver({result, winner});
     }
     getGameState() { //this ends up going to chessclient.js game.handleStateUpdate
         return {
@@ -196,11 +198,7 @@ class socketManager {
 
         const onResign = (pid) => () => {
             if (this.game.over) return;
-            this.game.over = true;
-            this.emitGameOver({
-                result: "resignation",
-                winner: this.game.colorOf(pid) === "w" ? "b" : "w"
-            });
+            this.game.end("resignation", this.game.colorOf(pid) === "w" ? "b" : "w");
         }
         this.addListener(p1, "resign", onResign(p1.id));
         this.addListener(p2, "resign", onResign(p2.id));

@@ -16,16 +16,31 @@ sidebarToggle.addEventListener("mousedown",(e)=>{
 
 })
 
+let authResolved = false;
+let queuedPage = null;
 function switchPage(page) {
-    // Show the requested page and hide all others. Pages are regular DOM elements with class "page".
+    sessionStorage.setItem("lastPage", page);
+
+    if (!authResolved && page === "account") {
+        queuedPage = "account"
+        return;
+    }
+    
     const pages = container.querySelectorAll('.page');
     pages.forEach(p => p.classList.remove('active'));
 
     const target = document.getElementById(page);
     if (target && target.classList.contains('page')) {
         target.classList.add('active');
-        
     }
+}
+switchPage(sessionStorage.getItem("lastPage") || "play");
+
+function onAuthResolved() {
+    authResolved = true;
+    let targetPage = queuedPage || sessionStorage.getItem("lastPage") || "play";
+    queuedPage = null;
+    switchPage(targetPage)
 }
 
 sidebar.querySelectorAll("button").forEach(e=>{
@@ -102,11 +117,13 @@ export function uiLoggedIn(username) {
     userNameInput.value = '';
     passwordInput.value = '';
     passwordConfirmInput.value = '';
+    onAuthResolved();
 }
 export function uiLoggedOut() {
     logInSetting.classList.remove("hidden");
     logOutSetting.classList.add("hidden");
     loginStatus.textContent = "You are not logged in.";
+    onAuthResolved();
 }
 
 function feedback(feedbackElem,warnLevel,str) {
@@ -173,10 +190,14 @@ export function initAccountBtns(signup, login, logout) {
 const requestGameBtn = document.getElementById("find-game");
 const cancelGameBtn = document.getElementById("cancel-find-game");
 const matchmakeFeedback = document.getElementById("matchmaking-feedback");
-
+const newSameGame = qs("#new-same-game");
+const backLobby = qs("#back-lobby");
+const cancelSameGame = qs("#cancel-same-game");
 export function initMatchmakingUI(networker) {
+    if (!networker) {
+        throw new Error("Networker instance is required to initialize matchmaking UI");
+    }
     requestGameBtn.addEventListener("click", async () => {
-        if (!networker) return;
         const result = await networker.joinQueue();
 
         if (result.success) {
@@ -187,12 +208,35 @@ export function initMatchmakingUI(networker) {
         }
     });
     cancelGameBtn.addEventListener("click", async () => {
-        if (!networker) return;
         const result = await networker.leaveQueue();
 
         if (result.success) {
             setMatchmakingUI(false);
             feedback(matchmakeFeedback, "", "")
+        } else {
+            console.log(result.message);
+        }
+    })
+    newSameGame.addEventListener("click", async ()=>{
+        
+        const result = await networker.joinQueue();
+
+        if (result.success) {
+            hide(newSameGame);
+            show(cancelSameGame);
+        } else {
+            console.log(result.message);
+            //maybe do something?   
+        }
+    })
+    cancelSameGame.addEventListener("click", async ()=>{
+        
+
+        const result = await networker.leaveQueue();
+        
+        if (result.success) {
+            hide(cancelSameGame);
+            show(newSameGame);
         } else {
             console.log(result.message);
         }
@@ -289,11 +333,15 @@ export function initDrawResign(drawFn, resignFn) {
 const gameOver = qs('#gameover')
 const winnerDisplay = qs('#game-winner')
 const reasonDisplay = qs('#game-win-reason')
+const gameEndActions = qs('#game-end-actions');
 export function win(result, reason) {
     [resign,draw,actionCancel,actionConfirm].forEach((e)=>hide(e))
     show(gameOver)
 
-    reasonDisplay.innerText = reason
+    reasonDisplay.innerText = reason;
+
+    stopClock();
+    gameEndActions.classList.remove('hidden');
     
     if (result==='b') {
         winnerDisplay.innerText = "Black wins" 
@@ -366,6 +414,9 @@ export function promptPromotion(color, coords, tileSize) {
 }
 
 function formatTime(seconds) {
+    if (seconds < 60) {
+        return seconds.toFixed(1);
+    }
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
@@ -409,10 +460,15 @@ export function setTimer(myColor, team, times) {
         }
     },100) 
 }
+function stopClock() {
+    clearInterval(clockTicker);
+    clockTicker=null;
+    selfClock.classList.remove("active");
+    opponentClock.classList.remove("active");
+}
 
 
-// Default page
-switchPage("play");
+
 
 
 

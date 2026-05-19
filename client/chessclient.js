@@ -1,6 +1,6 @@
 import { GameState, MoveValidator, xyToI,iToXY } from "../shared/chess.js";
 import { settings } from "./settings.js";
-import { loadPromotionImages, promptPromotion, setTimer } from "./ui.js";
+import { loadPromotionImages, promptPromotion, setTimer} from "./ui.js";
 
 export class Networker {
     constructor() {
@@ -24,9 +24,7 @@ export class Networker {
     move(move) {
         return new Promise((resolve) => {
             this.socket.emit("player-move", move, (result) => {
-                console.log("Move result: ", result)
                 resolve(result);
-
             })
         })
     }
@@ -252,10 +250,6 @@ export class Game {
             const move = this.validMoves.final.find(obj => obj.move === index);
             if (move && (move.move !== null)) {
 
-                //client thinks move is valid, send to server for validation and updating other clients
-                // for demonstration we will update local board
-                // THIS IS WHERE NETWORKING CALLS GO
-
                 let formattedMove = { from: this.selectedPiece, to: index, promotion: move.promotion, castle: move.castle, enPassant: move.enPassant }
                 this.Renderer.slidePiece(this.selectedPiece, index, this.GameState.getTile(this.selectedPiece));
                 this.resetValidMoves();
@@ -333,8 +327,10 @@ export class Game {
     }
 
     handlePlayerMove(data){
-        this.Renderer.slidePiece(data.from,data.to,data.piece);
-        this.Renderer.lastMove = {from:data.from,to:data.to};
+        if (data.piece.color != this.team) {
+            this.Renderer.slidePiece(data.from, data.to, data.piece);
+        }
+        this.Renderer.lastMove = { from: data.from, to: data.to };
     }
 
     cleanup() {

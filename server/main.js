@@ -11,6 +11,7 @@ import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import GameManager from './game.js';
 import db from './db.js';
+import {nanoid} from 'nanoid';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ quiet: true })
@@ -26,11 +27,10 @@ const connectedPlayers = new Map();
 const matchmakingQueue = new Set();
 const gameManager = new GameManager(io);
 
-const PORT = process.argv[2] || 3000; // Use command-line argument or default to 3000
+const PORT = process.argv[2] || 3000; //use command-line argument or default to 3000
 
 app.use(cookieParser());
 app.use(express.json());
-
 
 // Serve everything in the client directory
 const clientDir = path.join(__dirname, '../client');
@@ -40,8 +40,7 @@ app.use('/shared', express.static(sharedDir));
 app.use(express.static(clientDir));
 
 function guestName() {
-    //like guest-12345
-    return `Guest-${Math.floor(Math.random()*100000)}`;
+    return `guest-${nanoid(4).toUpperCase()}`;
 }
 
 function authenticate(req,res,next) {
@@ -162,27 +161,30 @@ app.post("/api/logout", authenticate, (req,res)=>{
 app.get("/api/me", (req, res) => {
     const token = req.cookies.sessionToken;
 
-    if (!token) {
-        return res.status(200).json({ user: null });
+    if (token) {
+        try {
+            const decoded = jwt.verify(token, JWT_SECRET);
+            const user = db.prepare('SELECT * FROM users WHERE id = ?').get(decoded.id);
+            if (!user) throw new Error("User not found");
+            return res.json({ user: { id: decoded.id, username: decoded.username, isGuest:decoded.isGuest } });
+        } catch {}
     }
 
-    jwt.verify(token, JWT_SECRET, (err, decoded) => {
-        if (err) {
-            return res.status(200).json({ user: null });
-        }
+    //no account found, create guest
 
-        const user = db.prepare('SELECT * FROM users WHERE id = ?').get(decoded.id);
+    const uid = "guest-"+nanoid();
+    const username = guestName();
 
-        if (!user) {
-            res.clearCookie('sessionToken', {
-                httpOnly: true,
-                secure: false
-            });
-            return res.status(200).json({ user: null });
-        }
+    db.prepare('INSERT INTO users (id, username, is_guest) VALUES (?, ?, 1)')
+    .run(uid, username);
 
-        res.status(200).json({ user: { id: decoded.id, username: decoded.username } });
+    const guestToken = jwt.sign({ id: uid, username, isGuest:true }, JWT_SECRET, { expiresIn: '7d' });
+    res.cookie('sessionToken', guestToken, {
+        maxAge:1000*60*60*24*7, //week
+        httpOnly:true,
+        secure: false //in production make true
     });
+    return res.json({ user: { id: uid, username, isGuest:true }});
 });
 
 io.use((socket,next)=>{
@@ -242,6 +244,7 @@ io.on('connection', (socket) => {
 
 
     socket.on('joinQueue', (callback)=>{
+        if (!callback) return;
         const player = connectedPlayers.get(socketId);
         if (!player) {
             callback(false, "Player not found");

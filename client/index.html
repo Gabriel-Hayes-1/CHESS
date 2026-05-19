@@ -18,7 +18,14 @@
         </div>
         <button id="sidebar-toggle"></button>
         <div id="page-content-container">
-            <div id="play" class="page active">
+            <div id="loading" class="page active">
+                <div class="loading-dots-wrap">
+                    <div class="loading-dots">
+                    <span></span><span></span><span></span>
+                    </div>
+                </div>
+            </div>
+            <div id="play" class="page">
                 <div id="play-container">
 
                     <div id="board-container">
@@ -63,16 +70,27 @@
                             </div>
                         
                             <div id="game-actions">
-                                <div class="hidden" id="action-confirm-label"></div>
-                                <div id="game-actions-row">
+                                <div class="action-label hidden" id="action-confirm-label"></div>
+                                <div class="action-label hidden" id="draw-offer-label"></div>
+                                <div class="game-actions-row hidden" id="draw-offer-actions">
+                                    <button class="action-btn" id="draw-accept">Accept</button>
+                                    <button class="action-btn" id="draw-deny">Deny</button>
+                                </div>
+                                <div class="game-actions-row">
                                     <button class="action-btn" id="offer-draw">Draw</button>
                                     <button class="action-btn danger" id="resign">Resign</button>
                                     <button class="action-btn hidden" id="action-confirm">Confirm</button>
                                     <button class="action-btn hidden" id="action-cancel">Cancel</button>
                                 </div>
+                                
                                 <div class="action-gameover hidden" id="gameover">
                                     <span id="game-winner">-</span>
                                     <span id="game-win-reason-wrap">by <span id="game-win-reason">-</span></span>
+                                </div>
+                                <div class="game-actions-row hidden" id="game-end-actions">
+                                    <button class="action-btn danger hidden" id="cancel-same-game">Cancel</button>
+                                    <button class="action-btn good" id="new-same-game">New Game</button>
+                                    <button class="action-btn" id="back-lobby">Back to Lobby</button>
                                 </div>
                             </div>
                         
