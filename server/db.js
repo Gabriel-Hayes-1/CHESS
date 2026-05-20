@@ -9,7 +9,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
     username TEXT NOT NULL,
-    passwordHash TEXT NOT NULL,
+    passwordHash TEXT,
     email TEXT,
     is_guest INTEGER NOT NULL DEFAULT 0,
     created_at INTEGER NOT NULL DEFAULT (unixepoch())

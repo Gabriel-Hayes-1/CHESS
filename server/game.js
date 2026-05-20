@@ -141,7 +141,7 @@ class Game {
     end(result,winner) {
         this.over = true;
         this.stopClock();
-        this.sockets.emitGameOver({result, winner});
+        this.sockets.emitGameOver({result, winner, clocks: this.clocks});
     }
     getGameState() { //this ends up going to chessclient.js game.handleStateUpdate
         return {
@@ -190,7 +190,8 @@ class socketManager {
             this.game.over = true;
             this.emitGameOver({
                 result: "abandonment",
-                winner: this.game.colorOf(pid) === "w" ? "b" : "w"
+                winner: this.game.colorOf(pid) === "w" ? "b" : "w",
+                clocks:  this.game.clocks
             });
         }
         this.addListener(p1, "disconnect", onDisconnect(p1.id));

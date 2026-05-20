@@ -212,7 +212,6 @@ io.on('connection', (socket) => {
     let username;
     if (accountId) {
         username = socket.userId.username;
-        console.log("Found username: ",username)
     } else {
         username = guestName();
     }
@@ -261,7 +260,6 @@ io.on('connection', (socket) => {
     });
 
     socket.on("cancelQueue", (callback)=>{
-        console.log("receved message")
         const player = connectedPlayers.get(socketId);
         if (!player) {
             callback(false, "Player not found");

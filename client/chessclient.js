@@ -12,7 +12,7 @@ export class Networker {
     on(eventName, callback) {
         if (!this._listeners[eventName]) this._listeners[eventName] = [];
         this._listeners[eventName].push(callback);
-        return ()=>this.off(eventName,fn)
+        return ()=>this.off(eventName,callback)
     }
     off(eventName, callback) {
         this._listeners[eventName] = this._listeners[eventName]?.filter(f => f !== callback);
@@ -131,7 +131,7 @@ export class Game {
             let pixelCoords = this.Renderer.iToPixelCoordinates(move.to)
             const chosenPiece = await promptPromotion(
                 this.team ?? this.GameState.getTile(move.to)?.color,
-                [pixelCoords[0]+this.tileSize[0]/2, pixelCoords[1]+this.tileSize[1]/2],
+                this.teamPerspective(pixelCoords[0]+this.tileSize[0]/2, pixelCoords[1]+this.tileSize[1]/2),
                 this.tileSize
             )
             this.isPromoting = false;
@@ -141,9 +141,11 @@ export class Game {
         return move
     }
     async makeMove(move) {
+        const gameStateBefore = this.GameState
         this.GameState = this.GameState.applyMove(move).state;
 
         move = await this.checkPromotion(move);
+
         if (this.trial) {
             if (move.promotion) {
                 const pawn = this.GameState.getTile(move.to); 
@@ -154,7 +156,11 @@ export class Game {
 
             }
         } else {
-            this.sendMove?.(move);
+            const moveResult = await this.sendMove?.(move);
+            if (!moveResult.ok) {
+                // Something went wrong, revert the move
+                this.GameState = gameStateBefore;
+            }
         }
     }
 

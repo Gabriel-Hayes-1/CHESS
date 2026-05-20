@@ -243,14 +243,24 @@ export function initMatchmakingUI(networker) {
     })
 }
 
+export function initNewTrialGame(newTrialGameFn) {
+    backLobby.addEventListener("click", (e) => {
+        newTrialGameFn();
+        changeCardPage("not-in-game");
 
-function setMatchmakingUI(setState) {
+    })
+}
+
+
+
+export function setMatchmakingUI(setState) {
     if (setState) {
         cancelGameBtn.classList.remove("hidden");
         requestGameBtn.classList.add("hidden");
     } else {
         cancelGameBtn.classList.add("hidden");
         requestGameBtn.classList.remove("hidden");
+        feedback(matchmakeFeedback, "", "")
     }
 }
 
@@ -357,9 +367,14 @@ export function win(result, reason) {
 const opUser = qs('#opponent-username');
 const selfUser = qs('#self-username')
 export function gameStartUI(data) {
+    opUser.textContent = data.opponent.username;
+    selfUser.textContent = data.me.username;
 
-    opUser.textContent = data.opponent.username
-    selfUser.textContent = data.me.username
+    //hide the win stuff
+    [gameOver,gameEndActions].forEach(e=>hide(e));
+
+    //show drawResign
+    [resign,draw].forEach(e=>show(e))
 }
 
 const promotions = {
