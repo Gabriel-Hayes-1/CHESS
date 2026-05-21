@@ -58,11 +58,13 @@ class Game {
         // {socket, username, game, accountId}
         this.players = [p1, p2];
         
+        
 
         this.clocks = {w:600,b:600}; // can change to game values (20 min, 5 min etc)
         this.increment = 0 //for things like 2+1: adds this many seconds when a turn is complete
         this.activeClock = null;
-        this.lastTickTime = null
+        this.lastTickTime = null;
+        this.wantsDraw = {w:false, b:false};
 
         this.sockets = new socketManager(this, io);
         this.sockets.addSocketsToRoom();
@@ -143,6 +145,12 @@ class Game {
         this.stopClock();
         this.sockets.emitGameOver({result, winner, clocks: this.clocks});
     }
+    checkDrawAgreement() {
+        if (this.over) return;
+        if (this.wantsDraw.w && this.wantsDraw.b) {
+            this.end("agreement", "draw");
+        }
+    }
     getGameState() { //this ends up going to chessclient.js game.handleStateUpdate
         return {
             ...this.gs,
@@ -203,6 +211,23 @@ class socketManager {
         }
         this.addListener(p1, "resign", onResign(p1.id));
         this.addListener(p2, "resign", onResign(p2.id));
+
+        const onDraw = (pid) => (drawState, callback) => {
+            if (this.game.over) {
+                callback({ok:false, error:"game already over"});
+                return
+            };
+            const color = this.game.colorOf(pid);
+            this.game.wantsDraw[color] = !!drawState;
+            this.game.checkDrawAgreement();
+            if (!this.game.over) {
+                const opponentSocket = color === "w" ? p2 : p1;
+                opponentSocket.emit("draw-offer", { from: color, state: !!drawState });
+            }   
+            callback({ok:true})
+        }
+        this.addListener(p1, "draw", onDraw(p1.id));
+        this.addListener(p2, "draw", onDraw(p2.id));
     }
     removeListeners() {
         for (const {socket,event,handler} of this._listeners) {

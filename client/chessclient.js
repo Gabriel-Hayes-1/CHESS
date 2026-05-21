@@ -65,7 +65,7 @@ export class Networker {
     }
     requestDraw() {
         return new Promise((resolve) => {
-            this.socket.emit("draw", (success, message) => {
+            this.socket.emit("draw", true, (success, message) => {
                 resolve({ success, message })
             })
         })

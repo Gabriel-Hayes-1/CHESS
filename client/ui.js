@@ -243,10 +243,12 @@ export function initMatchmakingUI(networker) {
     })
 }
 
-export function initNewTrialGame(newTrialGameFn) {
+export function initNewTrialGame(newTrialGameFn, networker) {
     backLobby.addEventListener("click", (e) => {
         newTrialGameFn();
         changeCardPage("not-in-game");
+        setMatchmakingUI(false);
+        networker.leaveQueue();
 
     })
 }
@@ -263,6 +265,7 @@ export function setMatchmakingUI(setState) {
         feedback(matchmakeFeedback, "", "")
     }
 }
+window.setMatchmakingUI = setMatchmakingUI
 
 setInterval(()=>{
     const dots = document.querySelectorAll(".dots");
@@ -298,6 +301,15 @@ const draw = qs('#offer-draw');
 const actionConfirmLabel = qs('#action-confirm-label')
 const actionConfirm = qs('#action-confirm')
 const actionCancel = qs('#action-cancel')
+const drawOffer = document.querySelector('#draw-offer');
+const drawAccept = document.querySelector('#draw-accept');
+const drawDecline = document.querySelector('#draw-decline');
+export function onDrawOffer() {
+    show(drawOffer);
+}
+
+
+
 function setConfirm(confirmState) {
     if (confirmState) {
         hide(resign)
@@ -338,6 +350,13 @@ export function initDrawResign(drawFn, resignFn) {
         hide(actionConfirmLabel)
         confirmAction();
     })
+    drawAccept.addEventListener('click', () => {
+        hide(drawOffer);
+        drawFn();
+    })
+    drawDecline.addEventListener('click', () => {
+        hide(drawOffer);
+    })
 }
 
 const gameOver = qs('#gameover')
@@ -372,6 +391,8 @@ export function gameStartUI(data) {
 
     //hide the win stuff
     [gameOver,gameEndActions].forEach(e=>hide(e));
+    hide(cancelSameGame);
+    show(newSameGame);
 
     //show drawResign
     [resign,draw].forEach(e=>show(e))
@@ -481,9 +502,5 @@ function stopClock() {
     selfClock.classList.remove("active");
     opponentClock.classList.remove("active");
 }
-
-
-
-
 
 

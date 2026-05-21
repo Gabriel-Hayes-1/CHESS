@@ -1,6 +1,6 @@
 import {
     uiLoggedIn, uiLoggedOut, initMatchmakingUI, changeCardPage,
-    initAccountBtns, initDrawResign, win, gameStartUI, initNewTrialGame, setMatchmakingUI
+    initAccountBtns, initDrawResign, win, gameStartUI, initNewTrialGame, setMatchmakingUI, onDrawOffer
 } from "./ui.js";
 import { Networker, Game, loadImages } from "./chessclient.js";
 import { signup, login, logout, checkLoginStatus } from "./auth.js";
@@ -17,8 +17,9 @@ class App {
 
         this.networker.on("game-start",async (data)=>this.handleGameStart(data))
         initMatchmakingUI(this.networker); //so ui knows what to call
-        initNewTrialGame(()=>this.createTrialGame)
+        initNewTrialGame(()=>this.createTrialGame(), this.networker)
         this._imagesLoaded = loadImages()
+
 
         checkLoginStatus({
             onSuccess: (u)=>uiLoggedIn(u), //you have a cookie, logged in
@@ -59,6 +60,9 @@ class App {
         this._unsubListeners.push(this.networker.on('game-over',(data)=>{
             console.log(data)
             win(data.winner,data.result)
+        }))
+        this._unsubListeners.push(this.networker.on('draw-offer',()=>{
+            onDrawOffer()
         }))
 
         setMatchmakingUI(false)

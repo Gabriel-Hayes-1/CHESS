@@ -61,6 +61,14 @@
                                 </div>
                                 <div class="player-clock" id="opponent-clock">10:00</div>
                             </div>
+
+                            <div class="game-actions hidden" id="draw-offer">
+                                <div class="action-label" id="draw-offer-label">Opponent offered a draw</div>
+                                <div class="game-actions-row" id="draw-offer-actions">
+                                    <button class="action-btn" id="draw-accept">Accept</button>
+                                    <button class="action-btn" id="draw-decline">Deny</button>
+                                </div>
+                            </div>
                         
                             <div id="move-history">
                                 <div id="move-history-label">Moves</div>
@@ -68,14 +76,13 @@
                                     <!-- JS populates: <span class="move-num">1</span><span class="move">e4</span><span class="move">e5</span> -->
                                 </div>
                             </div>
+
+                            
                         
-                            <div id="game-actions">
+                            <div class="game-actions">
                                 <div class="action-label hidden" id="action-confirm-label"></div>
                                 <div class="action-label hidden" id="draw-offer-label"></div>
-                                <div class="game-actions-row hidden" id="draw-offer-actions">
-                                    <button class="action-btn" id="draw-accept">Accept</button>
-                                    <button class="action-btn" id="draw-deny">Deny</button>
-                                </div>
+                                
                                 <div class="game-actions-row">
                                     <button class="action-btn" id="offer-draw">Draw</button>
                                     <button class="action-btn danger" id="resign">Resign</button>
