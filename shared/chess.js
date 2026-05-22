@@ -70,20 +70,17 @@ class GameState {
             next.castlingRights[piece.color].queenside = false;
         }
         //rook move check
-        if (piece.piece === "r") {
-            const [x, y] = iToXY(move.from);
-            if (y === 0) {
-                if (x === 0) {
-                    next.castlingRights["w"].queenside = false;
-                } else if (x === 7) {
-                    next.castlingRights["w"].kingside = false;
-                }
-            } else if (y === 7) {
-                if (x === 0) {
-                    next.castlingRights["b"].queenside = false;
-                } else if (x === 7) {
-                    next.castlingRights["b"].kingside = false;
-                }
+        if (y === 0) {          // black's back rank
+            if (x === 0) {
+                next.castlingRights["b"].queenside = false;
+            } else if (x === 7) {
+                next.castlingRights["b"].kingside = false;
+            }
+        } else if (y === 7) {   // white's back rank
+            if (x === 0) {
+                next.castlingRights["w"].queenside = false;
+            } else if (x === 7) {
+                next.castlingRights["w"].kingside = false;
             }
         }
         let rookMove = null;
@@ -329,8 +326,8 @@ class MoveValidator {
             const newIndex1 = xyToI(newX1, newY1);
             if (inBoundsxy(newX1, newY1) && !board[newIndex1]) {
                 if (newY1 == finalRow) {
-                    moves.total.push({ move: newIndex1, promotion:true});
-                    moves.noCaptures.push({ move: newIndex1, promotion:true});
+                    moves.total.push({ move: newIndex1, promotion: true });
+                    moves.noCaptures.push({ move: newIndex1, promotion: true });
                 } else {
                     moves.total.push({ move: newIndex1 });
                     moves.noCaptures.push({ move: newIndex1 });
@@ -462,4 +459,4 @@ function iToXY(i) {
     return [i % 8, Math.floor(i / 8)];
 }
 
-export {GameState, MoveValidator, xyToI, iToXY};
+export { GameState, MoveValidator, xyToI, iToXY };
